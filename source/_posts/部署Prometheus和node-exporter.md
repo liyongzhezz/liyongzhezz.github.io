@@ -5,6 +5,7 @@ tags:
 - Prometheus
 categories:
 - Prometheus
+- 服务部署
 description: 部署prometheus、node-exporter和grafana服务
 cover: https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1597811354534&di=4f9cf0a3bc115ebb13e67a946849bd8a&imgtype=0&src=http%3A%2F%2Ftm-image.tianyancha.com%2Ftm%2F1b2f7a725a0ef7361835201e25876cec.jpg
 ---
