@@ -1,0 +1,148 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Docker部署kafka | 彭彭丁满</title><meta name="description" content="使用docker部署一个三节点kafka集群"><meta name="keywords" content="kafka"><meta name="author" content="Luka Vergo"><meta name="copyright" content="Luka Vergo"><meta name="format-detection" content="telephone=no"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://liyongzhezz.github.io/2020/08/07/Docker%E9%83%A8%E7%BD%B2kafka/"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//fonts.googleapis.com" crossorigin="crossorigin"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><meta property="og:type" content="article"><meta property="og:title" content="Docker部署kafka"><meta property="og:url" content="https://liyongzhezz.github.io/2020/08/07/Docker%E9%83%A8%E7%BD%B2kafka/"><meta property="og:site_name" content="彭彭丁满"><meta property="og:description" content="使用docker部署一个三节点kafka集群"><meta property="og:image" content="https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=2822442550,174028885&amp;fm=26&amp;gp=0.jpg"><meta property="article:published_time" content="2020-08-07T02:49:59.000Z"><meta property="article:modified_time" content="2020-08-07T05:41:17.313Z"><meta name="twitter:card" content="summary"><script>var activateDarkMode = function () {
+  document.documentElement.setAttribute('data-theme', 'dark')
+  if (document.querySelector('meta[name="theme-color"]') !== null) {
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#000')
+  }
+}
+var activateLightMode = function () {
+  document.documentElement.setAttribute('data-theme', 'light')
+  if (document.querySelector('meta[name="theme-color"]') !== null) {
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#fff')
+  }
+}
+
+var getCookies = function (name) {
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2) return parts.pop().split(';').shift()
+}
+
+var autoChangeMode = '1'
+var t = getCookies('theme')
+if (autoChangeMode === '1') {
+  var isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+  var isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches
+  var isNotSpecified = window.matchMedia('(prefers-color-scheme: no-preference)').matches
+  var hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+
+  if (t === undefined) {
+    if (isLightMode) activateLightMode()
+    else if (isDarkMode) activateDarkMode()
+    else if (isNotSpecified || hasNoSupport) {
+      console.log('You specified no preference for a color scheme or your browser does not support it. I Schedule dark mode during night time.')
+      var now = new Date()
+      var hour = now.getHours()
+      var isNight = hour <= 6 || hour >= 18
+      isNight ? activateDarkMode() : activateLightMode()
+    }
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(function (e) {
+      if (Cookies.get('theme') === undefined) {
+        e.matches ? activateDarkMode() : activateLightMode()
+      }
+    })
+  } else if (t === 'light') activateLightMode()
+  else activateDarkMode()
+} else if (autoChangeMode === '2') {
+  now = new Date()
+  hour = now.getHours()
+  isNight = hour <= 6 || hour >= 18
+  if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+  else if (t === 'light') activateLightMode()
+  else activateDarkMode()
+} else {
+  if (t === 'dark') activateDarkMode()
+  else if (t === 'light') activateLightMode()
+}</script><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css"><link rel="prev" title="keepalived原理" href="https://liyongzhezz.github.io/2020/08/07/keepalived%E5%8E%9F%E7%90%86/"><link rel="next" title="解决if语句中不能设置proxy_set_header的问题" href="https://liyongzhezz.github.io/2020/08/06/%E8%A7%A3%E5%86%B3if%E8%AF%AD%E5%8F%A5%E4%B8%AD%E4%B8%8D%E8%83%BD%E8%AE%BE%E7%BD%AEproxy-set-header%E7%9A%84%E9%97%AE%E9%A2%98/"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css"><script src="https://cdn.jsdelivr.net/npm/gitalk@latest/dist/gitalk.min.js"></script><script src="https://cdn.jsdelivr.net/npm/blueimp-md5/js/md5.min.js"></script><script async="async" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script><script>(adsbygoogle = window.adsbygoogle || []).push({
+  google_ad_client: 'ca-pub-1185009661039450',
+  enable_page_level_ads: 'true'
+});</script><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web&amp;display=swap"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"簡"},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  bookmark: {
+    message_prev: '按',
+    message_next: '键将本页加入书签'
+  },
+  runtime_unit: '天',
+  runtime: true,
+  copyright: undefined,
+  ClickShowText: undefined,
+  medium_zoom: false,
+  fancybox: true,
+  Snackbar: {"bookmark":{"message_prev":"按","message_next":"键将本页加入书签"},"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#49b1f5","bgDark":"#121212","position":"bottom-left"},
+  justifiedGallery: {
+    js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
+    css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
+  },
+  baiduPush: false,
+  highlightCopy: true,
+  highlightLang: true,
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isanchor: false    
+}</script><script>var GLOBAL_CONFIG_SITE = { 
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isSidebar: false
+  }</script><noscript><style>
+#nav {
+  opacity: 1
+}
+.justified-gallery img{
+  opacity: 1
+}
+</style></noscript></head><body><div id="mobile-sidebar"><div id="menu_mask"></div><div id="mobile-sidebar-menus"><div class="mobile_author_icon"><img class="avatar-img" src="/img/avator.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="mobile_post_data"><div class="mobile_data_item is-center"><div class="mobile_data_link"><a href="/archives/"><div class="headline">文章</div><div class="length_num">74</div></a></div></div><div class="mobile_data_item is-center">      <div class="mobile_data_link"><a href="/tags/"><div class="headline">标签</div><div class="length_num">32</div></a></div></div><div class="mobile_data_item is-center">     <div class="mobile_data_link"><a href="/categories/"><div class="headline">分类</div><div class="length_num">42</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=2822442550,174028885&amp;fm=26&amp;gp=0.jpg)"><nav id="nav"><span class="pull-left" id="blog_name"><a class="blog_title" id="site-name" href="/">彭彭丁满</a></span><span class="pull-right menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><span class="toggle-menu close"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></span></span></nav><div id="post-info"><div id="post-title"><div class="posttitle">Docker部署kafka</div></div><div id="post-meta"><div class="meta-firstline"><time class="post-meta__date"><span class="post-meta__date-created" title="发表于 2020-08-07 10:49:59"><i class="far fa-calendar-alt fa-fw"></i> 发表于 2020-08-07</span><span class="post-meta__separator">|</span><span class="post-meta__date-updated" title="更新于 2020-08-07 13:41:17"><i class="fas fa-history fa-fw"></i> 更新于 2020-08-07</span></time><span class="post-meta__categories"><span class="post-meta__separator">|</span><i class="fas fa-inbox fa-fw post-meta__icon"></i><a class="post-meta__categories" href="/categories/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/">消息中间件</a><i class="fas fa-angle-right post-meta__separator"></i><i class="fas fa-inbox fa-fw post-meta__icon"></i><a class="post-meta__categories" href="/categories/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/kafka/">kafka</a></span></div><div class="meta-secondline"> </div><div class="meta-thirdline"><span class="post-meta-pv-cv"><i class="far fa-eye fa-fw post-meta__icon"></i><span>阅读量:</span><span id="busuanzi_value_page_pv"></span></span><span class="post-meta-commentcount"><span class="post-meta__separator">|</span><i class="far fa-comments fa-fw post-meta__icon"></i><span>评论数:</span><a href="/2020/08/07/Docker%E9%83%A8%E7%BD%B2kafka/#post-comment"><span class="gitalk-comment-count comment-count"></span></a></span></div></div></div></header><main class="layout_post" id="content-inner"><article id="post"><div class="post-content" id="article-container"><p>kafka依赖于zookeeper，所以在部署kafka的时候也需要部署一个zookeeper。</p>
+<p>创建数据目录：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># zookeeper数据目录</span></span><br><span class="line">$ mkdir -p /data/zookeeper/&#123;data,datalog,logs&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># kafka数据目录</span></span><br><span class="line">$ mkdir -p /data/kafka/node_&#123;0..2&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+<p>使用下面的Docker-compose文件进行部署：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># docker-compose.yaml</span></span><br><span class="line"><span class="attr">version:</span> <span class="string">"3"</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">zookeeper:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">zookeeper</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">zookeeper</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="number">2181</span><span class="string">:2181</span></span><br><span class="line">    <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">./data/zookeeper/data:/data</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">./data/zookeeper/datalog:/datalog</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">./data/zookeeper/logs:/logs</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">  <span class="attr">kafka_node_0:</span></span><br><span class="line">    <span class="attr">depends_on:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">zookeeper</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">kafka-node-0</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">wurstmeister/kafka</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="attr">KAFKA_BROKER_ID:</span> <span class="number">0</span></span><br><span class="line">      <span class="attr">KAFKA_ZOOKEEPER_CONNECT:</span> <span class="number">192.168</span><span class="number">.1</span><span class="number">.100</span><span class="string">:2181</span></span><br><span class="line">      <span class="attr">KAFKA_ADVERTISED_LISTENERS:</span> <span class="string">PLAINTEXT://192.168.1.100:9092</span></span><br><span class="line">      <span class="attr">KAFKA_LISTENERS:</span> <span class="string">PLAINTEXT://0.0.0.0:9092</span></span><br><span class="line">      <span class="attr">KAFKA_NUM_PARTITIONS:</span> <span class="number">3</span></span><br><span class="line">      <span class="attr">KAFKA_DEFAULT_REPLICATION_FACTOR:</span> <span class="number">2</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="number">9092</span><span class="string">:9092</span></span><br><span class="line">    <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">./data/kafka/node_0:/kafka</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">unless-stopped</span></span><br><span class="line">  <span class="attr">kafka_node_1:</span></span><br><span class="line">    <span class="attr">depends_on:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">kafka_node_0</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">kafka-node-1</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">wurstmeister/kafka</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="attr">KAFKA_BROKER_ID:</span> <span class="number">1</span></span><br><span class="line">      <span class="attr">KAFKA_ZOOKEEPER_CONNECT:</span> <span class="number">192.168</span><span class="number">.1</span><span class="number">.100</span><span class="string">:2181</span></span><br><span class="line">      <span class="attr">KAFKA_ADVERTISED_LISTENERS:</span> <span class="string">PLAINTEXT://192.168.1.100:9093</span></span><br><span class="line">      <span class="attr">KAFKA_LISTENERS:</span> <span class="string">PLAINTEXT://0.0.0.0:9093</span></span><br><span class="line">      <span class="attr">KAFKA_NUM_PARTITIONS:</span> <span class="number">3</span></span><br><span class="line">      <span class="attr">KAFKA_DEFAULT_REPLICATION_FACTOR:</span> <span class="number">2</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="number">9093</span><span class="string">:9093</span></span><br><span class="line">    <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">./data/kafka/node_1:/kafka</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">unless-stopped</span></span><br><span class="line">  <span class="attr">kafka_node_2:</span></span><br><span class="line">    <span class="attr">depends_on:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">kafka_node_1</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">kafka-node-2</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">wurstmeister/kafka</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="attr">KAFKA_BROKER_ID:</span> <span class="number">2</span></span><br><span class="line">      <span class="attr">KAFKA_ZOOKEEPER_CONNECT:</span> <span class="number">192.168</span><span class="number">.1</span><span class="number">.100</span><span class="string">:2181</span></span><br><span class="line">      <span class="attr">KAFKA_ADVERTISED_LISTENERS:</span> <span class="string">PLAINTEXT://192.168.1.100:9094</span></span><br><span class="line">      <span class="attr">KAFKA_LISTENERS:</span> <span class="string">PLAINTEXT://0.0.0.0:9094</span></span><br><span class="line">      <span class="attr">KAFKA_NUM_PARTITIONS:</span> <span class="number">3</span></span><br><span class="line">      <span class="attr">KAFKA_DEFAULT_REPLICATION_FACTOR:</span> <span class="number">2</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="number">9094</span><span class="string">:9094</span></span><br><span class="line">    <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">./data/kafka/node_2:/kafka</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">unless-stopped</span></span><br></pre></td></tr></table></figure>
+
+
+
+<blockquote>
+<p>注意将文件中<code>192.168.1.100</code>替换为实际的地址</p>
+</blockquote>
+<p>运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ docker-compose up -d </span><br><span class="line">$ docker ps</span><br></pre></td></tr></table></figure>
+
+
+
+<p><img src= "/img/loading.gif" data-src="status.png" alt=""></p>
+<blockquote>
+<p>确保所有容器都正常启动</p>
+</blockquote>
+</div><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:undefined">Luka Vergo</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://liyongzhezz.github.io/2020/08/07/Docker%E9%83%A8%E7%BD%B2kafka/">https://liyongzhezz.github.io/2020/08/07/Docker%E9%83%A8%E7%BD%B2kafka/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://liyongzhezz.github.io" target="_blank">彭彭丁满</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/kafka/">kafka</a></div><div class="post_share"><div class="social-share" data-image="https://timgsa.baidu.com/timg?image&amp;quality=80&amp;size=b9999_10000&amp;sec=1599305444011&amp;di=96b260e2ed93814697457e34e01387d5&amp;imgtype=0&amp;src=http%3A%2F%2Fimg2.ctoutiao.com%2Fuploads%2F2016%2F10%2F24%2F1477271707687844.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css"/><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js"></script></div></div><div class="post-reward"><button class="reward-button"><i class="fas fa-qrcode"></i> 打赏<div class="reward-main"><ul class="reward-all"><li class="reward-item"><img class="post-qr-code__img" src="/img/wechat.png" alt="wechat" onclick="window.open('/img/wechat.png')"/><div class="post-qr-code__desc">wechat</div></li><li class="reward-item"><img class="post-qr-code__img" src="/img/alipay.png" alt="alipay" onclick="window.open('/img/alipay.png')"/><div class="post-qr-code__desc">alipay</div></li></ul></div></button></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2020/08/07/keepalived%E5%8E%9F%E7%90%86/"><img class="prev-cover" data-src="https://timgsa.baidu.com/timg?image&amp;quality=80&amp;size=b9999_10000&amp;sec=1596790211578&amp;di=01034f6ca9b5eb4111356a34474f61f7&amp;imgtype=0&amp;src=http%3A%2F%2Fpic3.zhimg.com%2F0678908243ab87603205d64e9f886222_b.png" onerror="onerror=null;src='/img/404.jpg'"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">keepalived原理</div></div></a></div><div class="next-post pull-right"><a href="/2020/08/06/%E8%A7%A3%E5%86%B3if%E8%AF%AD%E5%8F%A5%E4%B8%AD%E4%B8%8D%E8%83%BD%E8%AE%BE%E7%BD%AEproxy-set-header%E7%9A%84%E9%97%AE%E9%A2%98/"><img class="next-cover" data-src="https://i.loli.net/2020/05/01/gkihqEjXxJ5UZ1C.jpg" onerror="onerror=null;src='/img/404.jpg'"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">解决if语句中不能设置proxy_set_header的问题</div></div></a></div></nav><div class="relatedPosts"><div class="relatedPosts_headline"><i class="fas fa-thumbs-up fa-fw"></i><span> 相关推荐</span></div><div class="relatedPosts_list"><div class="relatedPosts_item"><a href="/2020/08/10/二进制方式部署kafka-zookeeper集群/" title="二进制方式部署kafka+zookeeper集群"><img class="relatedPosts_cover" data-src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1597061962571&di=1bcb9ffe8797bbd4f755680a30555a9a&imgtype=0&src=http%3A%2F%2F5b0988e595225.cdn.sohucs.com%2Fimages%2F20171102%2F0565177860a5478d81dbaf8bf12d3866.jpeg"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="far fa-calendar-alt fa-fw"></i> 2020-08-10</div><div class="relatedPosts_title">二进制方式部署kafka+zookeeper集群</div></div></a></div><div class="relatedPosts_item"><a href="/2020/08/10/kafka的常用操作/" title="kafka的常用命令行操作"><img class="relatedPosts_cover" data-src="https://ss3.bdstatic.com/70cFv8Sh_Q1YnxGkpoWK1HF6hhy/it/u=1860660051,254729202&fm=26&gp=0.jpg"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="far fa-calendar-alt fa-fw"></i> 2020-08-10</div><div class="relatedPosts_title">kafka的常用命令行操作</div></div></a></div></div></div><hr><div id="post-comment"><div class="comment_headling"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
+  clientID: '50c33518212f08034726',
+  clientSecret: '497b04ce72a905ec41ebc3fb051369434affe3c7',
+  repo: 'liyongzhezz.github.io',
+  owner: 'liyongzhezz',
+  admin: ['liyongzhezz'],
+  id: md5(decodeURI(location.pathname)),
+  language: 'zh-CN',
+  perPage: 10,
+  distractionFreeMode: false,
+  pagerDirection: 'last',
+  createIssueManually: false,
+  updateCountCallback: commentCount
+})
+gitalk.render('gitalk-container')
+
+function commentCount(n){
+  try {
+    document.getElementsByClassName('gitalk-comment-count')[0].innerHTML= n
+  } catch (e) {
+    return false
+  }
+}</script></div></article></main><footer id="footer" data-type="color"><div id="footer-wrap"><div class="copyright">&copy;2020  <i id="heartbeat" class="fa fas fa-heartbeat"></i> Luka Vergo</div><div class="framework-info"><span>驱动 </span><a href="https://hexo.io" target="_blank" rel="noopener"><span>Hexo</span></a><span class="footer-separator">|</span><span>主题 </span><a href="https://github.com/jerryc127/hexo-theme-butterfly" target="_blank" rel="noopener"><span>Butterfly</span></a></div></div><head><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/HCLonely/images@master/others/heartbeat.min.css"><meta name="generator" content="Hexo 4.2.1"></head></footer></div><section class="rightside" id="rightside"><div id="rightside-config-hide"><button id="readmode" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="font_plus" title="放大字体"><i class="fas fa-plus"></i></button><button id="font_minus" title="缩小字体"><i class="fas fa-minus"></i></button><button class="translate_chn_to_cht" id="translateLink" title="简繁转换">简</button><button id="darkmode" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button></div><div id="rightside-config-show"><button id="rightside_config" title="设置"><i class="fas fa-cog"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="scroll_to_comment fas fa-comments"></i></a><button id="go-up" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></section><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module" defer></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js" async></script></body></html>

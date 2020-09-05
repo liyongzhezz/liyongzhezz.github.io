@@ -1,0 +1,180 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>keepalived原理 | 彭彭丁满</title><meta name="description" content="keepalived原理介绍"><meta name="keywords" content="keepalived"><meta name="author" content="Luka Vergo"><meta name="copyright" content="Luka Vergo"><meta name="format-detection" content="telephone=no"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://liyongzhezz.github.io/2020/08/07/keepalived%E5%8E%9F%E7%90%86/"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//fonts.googleapis.com" crossorigin="crossorigin"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><meta property="og:type" content="article"><meta property="og:title" content="keepalived原理"><meta property="og:url" content="https://liyongzhezz.github.io/2020/08/07/keepalived%E5%8E%9F%E7%90%86/"><meta property="og:site_name" content="彭彭丁满"><meta property="og:description" content="keepalived原理介绍"><meta property="og:image" content="https://timgsa.baidu.com/timg?image&amp;quality=80&amp;size=b9999_10000&amp;sec=1596790211578&amp;di=01034f6ca9b5eb4111356a34474f61f7&amp;imgtype=0&amp;src=http%3A%2F%2Fpic3.zhimg.com%2F0678908243ab87603205d64e9f886222_b.png"><meta property="article:published_time" content="2020-08-07T06:00:28.000Z"><meta property="article:modified_time" content="2020-08-07T06:50:04.649Z"><meta name="twitter:card" content="summary"><script>var activateDarkMode = function () {
+  document.documentElement.setAttribute('data-theme', 'dark')
+  if (document.querySelector('meta[name="theme-color"]') !== null) {
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#000')
+  }
+}
+var activateLightMode = function () {
+  document.documentElement.setAttribute('data-theme', 'light')
+  if (document.querySelector('meta[name="theme-color"]') !== null) {
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#fff')
+  }
+}
+
+var getCookies = function (name) {
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2) return parts.pop().split(';').shift()
+}
+
+var autoChangeMode = '1'
+var t = getCookies('theme')
+if (autoChangeMode === '1') {
+  var isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+  var isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches
+  var isNotSpecified = window.matchMedia('(prefers-color-scheme: no-preference)').matches
+  var hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+
+  if (t === undefined) {
+    if (isLightMode) activateLightMode()
+    else if (isDarkMode) activateDarkMode()
+    else if (isNotSpecified || hasNoSupport) {
+      console.log('You specified no preference for a color scheme or your browser does not support it. I Schedule dark mode during night time.')
+      var now = new Date()
+      var hour = now.getHours()
+      var isNight = hour <= 6 || hour >= 18
+      isNight ? activateDarkMode() : activateLightMode()
+    }
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(function (e) {
+      if (Cookies.get('theme') === undefined) {
+        e.matches ? activateDarkMode() : activateLightMode()
+      }
+    })
+  } else if (t === 'light') activateLightMode()
+  else activateDarkMode()
+} else if (autoChangeMode === '2') {
+  now = new Date()
+  hour = now.getHours()
+  isNight = hour <= 6 || hour >= 18
+  if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+  else if (t === 'light') activateLightMode()
+  else activateDarkMode()
+} else {
+  if (t === 'dark') activateDarkMode()
+  else if (t === 'light') activateLightMode()
+}</script><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css"><link rel="prev" title="安装RabbitMQ" href="https://liyongzhezz.github.io/2020/08/09/%E5%AE%89%E8%A3%85RabbitMQ/"><link rel="next" title="Docker部署kafka" href="https://liyongzhezz.github.io/2020/08/07/Docker%E9%83%A8%E7%BD%B2kafka/"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css"><script src="https://cdn.jsdelivr.net/npm/gitalk@latest/dist/gitalk.min.js"></script><script src="https://cdn.jsdelivr.net/npm/blueimp-md5/js/md5.min.js"></script><script async="async" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script><script>(adsbygoogle = window.adsbygoogle || []).push({
+  google_ad_client: 'ca-pub-1185009661039450',
+  enable_page_level_ads: 'true'
+});</script><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web&amp;display=swap"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"簡"},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  bookmark: {
+    message_prev: '按',
+    message_next: '键将本页加入书签'
+  },
+  runtime_unit: '天',
+  runtime: true,
+  copyright: undefined,
+  ClickShowText: undefined,
+  medium_zoom: false,
+  fancybox: true,
+  Snackbar: {"bookmark":{"message_prev":"按","message_next":"键将本页加入书签"},"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#49b1f5","bgDark":"#121212","position":"bottom-left"},
+  justifiedGallery: {
+    js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
+    css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
+  },
+  baiduPush: false,
+  highlightCopy: true,
+  highlightLang: true,
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isanchor: false    
+}</script><script>var GLOBAL_CONFIG_SITE = { 
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isSidebar: true
+  }</script><noscript><style>
+#nav {
+  opacity: 1
+}
+.justified-gallery img{
+  opacity: 1
+}
+</style></noscript></head><body><div id="mobile-sidebar"><div id="menu_mask"></div><div id="mobile-sidebar-menus"><div class="mobile_author_icon"><img class="avatar-img" src="/img/avator.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="mobile_post_data"><div class="mobile_data_item is-center"><div class="mobile_data_link"><a href="/archives/"><div class="headline">文章</div><div class="length_num">74</div></a></div></div><div class="mobile_data_item is-center">      <div class="mobile_data_link"><a href="/tags/"><div class="headline">标签</div><div class="length_num">32</div></a></div></div><div class="mobile_data_item is-center">     <div class="mobile_data_link"><a href="/categories/"><div class="headline">分类</div><div class="length_num">42</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><i class="fas fa-arrow-right on" id="toggle-sidebar"></i><div id="sidebar"><div class="sidebar-toc"><div class="sidebar-toc__title">目录</div><div class="sidebar-toc__progress"><span class="progress-notice">你已经读了</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar">     </div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#keepalived介绍"><span class="toc-number">1.</span> <span class="toc-text">keepalived介绍</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#工作原理"><span class="toc-number">2.</span> <span class="toc-text">工作原理</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#处理请求"><span class="toc-number">2.1.</span> <span class="toc-text">处理请求</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#主备切换"><span class="toc-number">2.2.</span> <span class="toc-text">主备切换</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#不抢占机制nopreempt"><span class="toc-number">3.</span> <span class="toc-text">不抢占机制nopreempt</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#脑裂"><span class="toc-number">4.</span> <span class="toc-text">脑裂</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#什么是脑裂"><span class="toc-number">4.1.</span> <span class="toc-text">什么是脑裂</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#脑裂原因"><span class="toc-number">4.2.</span> <span class="toc-text">脑裂原因</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#解决脑裂的办法"><span class="toc-number">4.3.</span> <span class="toc-text">解决脑裂的办法</span></a></li></ol></li></ol></div></div></div><div id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://timgsa.baidu.com/timg?image&amp;quality=80&amp;size=b9999_10000&amp;sec=1596790211578&amp;di=01034f6ca9b5eb4111356a34474f61f7&amp;imgtype=0&amp;src=http%3A%2F%2Fpic3.zhimg.com%2F0678908243ab87603205d64e9f886222_b.png)"><nav id="nav"><span class="pull-left" id="blog_name"><a class="blog_title" id="site-name" href="/">彭彭丁满</a></span><span class="pull-right menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><span class="toggle-menu close"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></span></span></nav><div id="post-info"><div id="post-title"><div class="posttitle">keepalived原理</div></div><div id="post-meta"><div class="meta-firstline"><time class="post-meta__date"><span class="post-meta__date-created" title="发表于 2020-08-07 14:00:28"><i class="far fa-calendar-alt fa-fw"></i> 发表于 2020-08-07</span><span class="post-meta__separator">|</span><span class="post-meta__date-updated" title="更新于 2020-08-07 14:50:04"><i class="fas fa-history fa-fw"></i> 更新于 2020-08-07</span></time><span class="post-meta__categories"><span class="post-meta__separator">|</span><i class="fas fa-inbox fa-fw post-meta__icon"></i><a class="post-meta__categories" href="/categories/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E5%92%8C%E9%AB%98%E5%8F%AF%E7%94%A8%E6%96%B9%E6%A1%88/">负载均衡和高可用方案</a><i class="fas fa-angle-right post-meta__separator"></i><i class="fas fa-inbox fa-fw post-meta__icon"></i><a class="post-meta__categories" href="/categories/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E5%92%8C%E9%AB%98%E5%8F%AF%E7%94%A8%E6%96%B9%E6%A1%88/keepalived/">keepalived</a></span></div><div class="meta-secondline"> </div><div class="meta-thirdline"><span class="post-meta-pv-cv"><i class="far fa-eye fa-fw post-meta__icon"></i><span>阅读量:</span><span id="busuanzi_value_page_pv"></span></span><span class="post-meta-commentcount"><span class="post-meta__separator">|</span><i class="far fa-comments fa-fw post-meta__icon"></i><span>评论数:</span><a href="/2020/08/07/keepalived%E5%8E%9F%E7%90%86/#post-comment"><span class="gitalk-comment-count comment-count"></span></a></span></div></div></div></header><main class="layout_post" id="content-inner"><article id="post"><div class="post-content" id="article-container"><h1 id="keepalived介绍"><a href="#keepalived介绍" class="headerlink" title="keepalived介绍"></a>keepalived介绍</h1><p>keepalived软件起初是专门为LVS负载均衡软件而设计，用来管理并监控LVS集群系统中各个服务节点的状态，后来又加入了可以实现高可用的VRRP功能，因此，keepalived除了能够管理LVS软件ipvsadm外，还可以作为其它服务（例如：Nginx、HAProxy、MySQL等）的高可用解决方案软件。</p>
+<p>keepalived软件主要使用过VRRP协议实心高可用功能；VRRP是Virtual Route Redundancy Protocol（虚拟路由冗余协议）的缩写，VRRP出现的目的就是为了解决静态路由单点故障问题的，它能够保证当个别节点宕机时，整个网络可以不间断地运行。</p>
+<blockquote>
+<p> Keepalived一方面具有配置管理LVS的功能，同时还具有LVS下面节点进行健康检查的功能，另一方面也可以实现系统网络服务的高可用功能。</p>
+</blockquote>
+<br>
+
+
+
+<h1 id="工作原理"><a href="#工作原理" class="headerlink" title="工作原理"></a>工作原理</h1><p><img src= "/img/loading.gif" data-src="keepalived.png" alt=""></p>
+<h2 id="处理请求"><a href="#处理请求" class="headerlink" title="处理请求"></a>处理请求</h2><p>Keepalived高可用对之间是通过 VRRP进行通信的， VRRP是通过竞选机制来确定主备的，主的优先级高于备。因此，工作时主会优先获得所有的资源，备节点处于等待状态，当主挂了的时候，备节点就会接管主节点的资源，然后顶替主节点对外提供服务。　　</p>
+<p>在 Keepalived服务对之间，只有作为主的服务器会一直发送 VRRP广播包，告诉备它还活着，此时备不会枪占主，当主不可用时，即备监听不到主发送的广播包时，就会启动相关服务接管资源，保证业务的连续性。接管速度最快可以小于1秒。</p>
+<blockquote>
+<p>通过竞争一个VIP来实现</p>
+</blockquote>
+<h2 id="主备切换"><a href="#主备切换" class="headerlink" title="主备切换"></a>主备切换</h2><p>Keepalived高可用服务之间的故障切换转移，还是通过VRRP（Vritual Route Redundancy Protocol，虚拟路由冗余协议）来实现的。在Keepalived服务正常工作时，主Master节点会不断向备节点发送心跳消息（多播的方式），用来告诉备用节点自己还活着，当主Master节点发送故障时，就无法发送心跳消息，备节点也就因此无法继续检测到来自主Master的心跳消息了，于是调用自身的接管程序，接管主Master节点的IP资源及服务。而当主Master恢复时，备Backup节点默认又会主动释放主节点故障时自身接管的IP资源及服务，恢复到原来的备用角色。</p>
+<br>
+
+
+
+<h1 id="不抢占机制nopreempt"><a href="#不抢占机制nopreempt" class="headerlink" title="不抢占机制nopreempt"></a>不抢占机制nopreempt</h1><p>当Master出现问题后，Backup会竞选为新的Master，那么之前的Master如果故障恢复后，是继续成为Master还是变成Backup呢？默认情况下，如果没设置不抢占，那么之前的Master起来后还是会继续抢占成为Master，也就是说，整个过程需要发生两次切换：</p>
+<ul>
+<li><p>主节点故障：Master —&gt; Backup；</p>
+</li>
+<li><p>主节点恢复：Backup —&gt;Master；</p>
+</li>
+</ul>
+<p>这样对业务频繁的切换是不能容忍的，因此我们希望Master起来后成为Backup，所以要设置不抢占，Keepalived里面提供了 nopreempt， 这个配置只能用在状态为Backup的机器上，但是我们明明希望的是Master不进行抢占，那没办法，Master的状态也得设置为Backup，也就是说两台负载均衡器都要讲state状态设置为Backup；那么谁是Master？就要通过优先级priority的高低来决定了，优先级搞得成为Master，反之为backup。</p>
+<br>
+
+
+
+<h1 id="脑裂"><a href="#脑裂" class="headerlink" title="脑裂"></a>脑裂</h1><h2 id="什么是脑裂"><a href="#什么是脑裂" class="headerlink" title="什么是脑裂"></a>什么是脑裂</h2><p>在高可用HA系统中，当联系2个节点的“心跳线”断开时，本来为一整体，一个VRRP协议组，动作协调的HA系统，就分裂为两个独立的个体。由于相互失去了联系，都以为对方出了故障；两个节点的HA软件像“连体人”一样，有共同的身体却拥有两个脑袋，争抢“共享资源”身体，争抢服务器里的应用服务，就会发送严重后果，或者共享资源被瓜分，两边服务都起不来或者都起来都为Master，假如两端服务器发生了脑裂现象就会成为各自的Master，会同时读写“共享存储”，导致数据损坏。（常见的如数据库轮询着的联机日志出错）</p>
+<h2 id="脑裂原因"><a href="#脑裂原因" class="headerlink" title="脑裂原因"></a>脑裂原因</h2><p>一般脑裂产生是因为如下的几个原因：</p>
+<ul>
+<li>高可用服务器对之间心跳线链路发生故障，导致无法正常通信；</li>
+<li>因心跳线坏了；</li>
+<li>因网卡及相关驱动坏了，ip配置及冲突问题（网卡直连）；</li>
+<li>因心跳线间连接的设备故障（网卡及交换机）；</li>
+<li>因仲裁的机器出问题（采用仲裁的方案） ；</li>
+<li>高可用服务器上开启了 iptables防火墙阻挡了心跳消息传输 ；</li>
+<li>高可用服务器上心跳网卡地址等信息配置不正确，导致发送心跳失败 ；</li>
+<li>其他服务配置不当等原因，如心跳方式不同，心跳广插冲突、软件Bug等 </li>
+</ul>
+<blockquote>
+<p>Keepalived配置里同一 VRRP实例如果 virtual_router_id两端参数配置不一致也会导致裂脑问题发生</p>
+</blockquote>
+<h2 id="解决脑裂的办法"><a href="#解决脑裂的办法" class="headerlink" title="解决脑裂的办法"></a>解决脑裂的办法</h2><ul>
+<li>添加冗余的心跳线，例如：双线条线（心跳线也HA），尽量减少“裂脑”发生几率，例如同时使用串行电缆和以太网电缆连接；</li>
+<li>启用磁盘锁。正在服务一方锁住共享磁盘，“裂脑”发生时，让对方完全“抢不走”共享磁盘资源；</li>
+<li>设置仲裁机制。例如设置参考IP（如网关IP），当心跳线完全断开时，2个节点都各自ping一下参考IP，不通则表明断点就出在本端。不仅“心跳”、还兼对外“服务”的本端网络链路断了，即使启动（或继续）应用服务也没有用了，那就主动放弃竞争，让能够ping通参考IP的一端去起服务。更保险一些，ping不通参考IP的一方干脆就自我重启，以彻底释放有可能还占用着的那些共享资源；</li>
+<li>当检测到裂脑时强行关闭一个心跳节点（这个功能需特殊设备支持，如Stonith、feyce）。相当于备节点接收不到心跳消患，通过单独的线路发送关机命令关闭主节点的电源；</li>
+</ul>
+<blockquote>
+<p>但使用锁磁盘也会有一个不小的问题，如果占用共享盘的一方不主动“解锁”，另一方就永远得不到共享磁盘。现实中假如服务节点突然死机或崩溃，就不可能执行解锁命令。后备节点也就接管不了共享资源和应用服务。于是有人在HA中设计了“智能”锁。即：正在服务的一方只在发现心跳线全部断开（察觉不到对端）时才启用磁盘锁。平时就不上锁了。</p>
+</blockquote>
+<p>　</p>
+</div><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:undefined">Luka Vergo</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://liyongzhezz.github.io/2020/08/07/keepalived%E5%8E%9F%E7%90%86/">https://liyongzhezz.github.io/2020/08/07/keepalived%E5%8E%9F%E7%90%86/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://liyongzhezz.github.io" target="_blank">彭彭丁满</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/keepalived/">keepalived</a></div><div class="post_share"><div class="social-share" data-image="https://timgsa.baidu.com/timg?image&amp;quality=80&amp;size=b9999_10000&amp;sec=1599305444011&amp;di=96b260e2ed93814697457e34e01387d5&amp;imgtype=0&amp;src=http%3A%2F%2Fimg2.ctoutiao.com%2Fuploads%2F2016%2F10%2F24%2F1477271707687844.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css"/><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js"></script></div></div><div class="post-reward"><button class="reward-button"><i class="fas fa-qrcode"></i> 打赏<div class="reward-main"><ul class="reward-all"><li class="reward-item"><img class="post-qr-code__img" src="/img/wechat.png" alt="wechat" onclick="window.open('/img/wechat.png')"/><div class="post-qr-code__desc">wechat</div></li><li class="reward-item"><img class="post-qr-code__img" src="/img/alipay.png" alt="alipay" onclick="window.open('/img/alipay.png')"/><div class="post-qr-code__desc">alipay</div></li></ul></div></button></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2020/08/09/%E5%AE%89%E8%A3%85RabbitMQ/"><img class="prev-cover" data-src="https://ss0.bdstatic.com/70cFuHSh_Q1YnxGkpoWK1HF6hhy/it/u=2897651972,890317148&amp;fm=26&amp;gp=0.jpg" onerror="onerror=null;src='/img/404.jpg'"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">安装RabbitMQ</div></div></a></div><div class="next-post pull-right"><a href="/2020/08/07/Docker%E9%83%A8%E7%BD%B2kafka/"><img class="next-cover" data-src="https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=2822442550,174028885&amp;fm=26&amp;gp=0.jpg" onerror="onerror=null;src='/img/404.jpg'"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Docker部署kafka</div></div></a></div></nav><hr><div id="post-comment"><div class="comment_headling"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
+  clientID: '50c33518212f08034726',
+  clientSecret: '497b04ce72a905ec41ebc3fb051369434affe3c7',
+  repo: 'liyongzhezz.github.io',
+  owner: 'liyongzhezz',
+  admin: ['liyongzhezz'],
+  id: md5(decodeURI(location.pathname)),
+  language: 'zh-CN',
+  perPage: 10,
+  distractionFreeMode: false,
+  pagerDirection: 'last',
+  createIssueManually: false,
+  updateCountCallback: commentCount
+})
+gitalk.render('gitalk-container')
+
+function commentCount(n){
+  try {
+    document.getElementsByClassName('gitalk-comment-count')[0].innerHTML= n
+  } catch (e) {
+    return false
+  }
+}</script></div></article></main><footer id="footer" data-type="color"><div id="footer-wrap"><div class="copyright">&copy;2020  <i id="heartbeat" class="fa fas fa-heartbeat"></i> Luka Vergo</div><div class="framework-info"><span>驱动 </span><a href="https://hexo.io" target="_blank" rel="noopener"><span>Hexo</span></a><span class="footer-separator">|</span><span>主题 </span><a href="https://github.com/jerryc127/hexo-theme-butterfly" target="_blank" rel="noopener"><span>Butterfly</span></a></div></div><head><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/HCLonely/images@master/others/heartbeat.min.css"><meta name="generator" content="Hexo 4.2.1"></head></footer></div><section class="rightside" id="rightside"><div id="rightside-config-hide"><button id="readmode" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="font_plus" title="放大字体"><i class="fas fa-plus"></i></button><button id="font_minus" title="缩小字体"><i class="fas fa-minus"></i></button><button class="translate_chn_to_cht" id="translateLink" title="简繁转换">简</button><button id="darkmode" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button></div><div id="rightside-config-show"><button id="rightside_config" title="设置"><i class="fas fa-cog"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="scroll_to_comment fas fa-comments"></i></a><button class="close" id="mobile-toc-button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></section><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module" defer></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js" async></script></body></html>
