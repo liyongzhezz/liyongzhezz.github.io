@@ -1,0 +1,176 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>使用uwsgi+nginx部署django服务 | 彭彭丁满</title><meta name="description" content="使用uwsgi和nginx结合部署django服务"><meta name="keywords" content="Django,uwsgi"><meta name="author" content="Luka Vergo"><meta name="copyright" content="Luka Vergo"><meta name="format-detection" content="telephone=no"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://liyongzhezz.github.io/2020/09/12/%E4%BD%BF%E7%94%A8uwsgi-nginx%E9%83%A8%E7%BD%B2django%E6%9C%8D%E5%8A%A1/"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//fonts.googleapis.com" crossorigin="crossorigin"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><meta property="og:type" content="article"><meta property="og:title" content="使用uwsgi+nginx部署django服务"><meta property="og:url" content="https://liyongzhezz.github.io/2020/09/12/%E4%BD%BF%E7%94%A8uwsgi-nginx%E9%83%A8%E7%BD%B2django%E6%9C%8D%E5%8A%A1/"><meta property="og:site_name" content="彭彭丁满"><meta property="og:description" content="使用uwsgi和nginx结合部署django服务"><meta property="og:image" content="https://timgsa.baidu.com/timg?image&amp;quality=80&amp;size=b9999_10000&amp;sec=1599902999809&amp;di=6306855101fdb4e6f595c38dfce7f8dc&amp;imgtype=0&amp;src=http%3A%2F%2Fblog.demon8.cn%2Fmedia%2Farticle_img%2F2019%2F12%2F12%2Fw1c30rf061.jpeg"><meta property="article:published_time" content="2020-09-12T06:39:51.000Z"><meta property="article:modified_time" content="2020-09-12T07:04:59.945Z"><meta name="twitter:card" content="summary"><script>var activateDarkMode = function () {
+  document.documentElement.setAttribute('data-theme', 'dark')
+  if (document.querySelector('meta[name="theme-color"]') !== null) {
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#000')
+  }
+}
+var activateLightMode = function () {
+  document.documentElement.setAttribute('data-theme', 'light')
+  if (document.querySelector('meta[name="theme-color"]') !== null) {
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#fff')
+  }
+}
+
+var getCookies = function (name) {
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2) return parts.pop().split(';').shift()
+}
+
+var autoChangeMode = '1'
+var t = getCookies('theme')
+if (autoChangeMode === '1') {
+  var isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+  var isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches
+  var isNotSpecified = window.matchMedia('(prefers-color-scheme: no-preference)').matches
+  var hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+
+  if (t === undefined) {
+    if (isLightMode) activateLightMode()
+    else if (isDarkMode) activateDarkMode()
+    else if (isNotSpecified || hasNoSupport) {
+      console.log('You specified no preference for a color scheme or your browser does not support it. I Schedule dark mode during night time.')
+      var now = new Date()
+      var hour = now.getHours()
+      var isNight = hour <= 6 || hour >= 18
+      isNight ? activateDarkMode() : activateLightMode()
+    }
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(function (e) {
+      if (Cookies.get('theme') === undefined) {
+        e.matches ? activateDarkMode() : activateLightMode()
+      }
+    })
+  } else if (t === 'light') activateLightMode()
+  else activateDarkMode()
+} else if (autoChangeMode === '2') {
+  now = new Date()
+  hour = now.getHours()
+  isNight = hour <= 6 || hour >= 18
+  if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+  else if (t === 'light') activateLightMode()
+  else activateDarkMode()
+} else {
+  if (t === 'dark') activateDarkMode()
+  else if (t === 'light') activateLightMode()
+}</script><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css"><link rel="next" title="Nginx Ingress性能调优" href="https://liyongzhezz.github.io/2020/09/09/Nginx-Ingress%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98/"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css"><script src="https://cdn.jsdelivr.net/npm/gitalk@latest/dist/gitalk.min.js"></script><script src="https://cdn.jsdelivr.net/npm/blueimp-md5/js/md5.min.js"></script><script async="async" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script><script>(adsbygoogle = window.adsbygoogle || []).push({
+  google_ad_client: 'ca-pub-1185009661039450',
+  enable_page_level_ads: 'true'
+});</script><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web&amp;display=swap"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"簡"},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  bookmark: {
+    message_prev: '按',
+    message_next: '键将本页加入书签'
+  },
+  runtime_unit: '天',
+  runtime: true,
+  copyright: undefined,
+  ClickShowText: undefined,
+  medium_zoom: false,
+  fancybox: true,
+  Snackbar: {"bookmark":{"message_prev":"按","message_next":"键将本页加入书签"},"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#49b1f5","bgDark":"#121212","position":"bottom-left"},
+  justifiedGallery: {
+    js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
+    css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
+  },
+  baiduPush: false,
+  highlightCopy: true,
+  highlightLang: true,
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isanchor: false    
+}</script><script>var GLOBAL_CONFIG_SITE = { 
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isSidebar: true
+  }</script><noscript><style>
+#nav {
+  opacity: 1
+}
+.justified-gallery img{
+  opacity: 1
+}
+</style></noscript></head><body><div id="mobile-sidebar"><div id="menu_mask"></div><div id="mobile-sidebar-menus"><div class="mobile_author_icon"><img class="avatar-img" src="/img/avator.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="mobile_post_data"><div class="mobile_data_item is-center"><div class="mobile_data_link"><a href="/archives/"><div class="headline">文章</div><div class="length_num">80</div></a></div></div><div class="mobile_data_item is-center">      <div class="mobile_data_link"><a href="/tags/"><div class="headline">标签</div><div class="length_num">35</div></a></div></div><div class="mobile_data_item is-center">     <div class="mobile_data_link"><a href="/categories/"><div class="headline">分类</div><div class="length_num">47</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><i class="fas fa-arrow-right on" id="toggle-sidebar"></i><div id="sidebar"><div class="sidebar-toc"><div class="sidebar-toc__title">目录</div><div class="sidebar-toc__progress"><span class="progress-notice">你已经读了</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar">     </div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#uwsgi介绍"><span class="toc-number">1.</span> <span class="toc-text">uwsgi介绍</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#wsgi"><span class="toc-number">1.1.</span> <span class="toc-text">wsgi</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#uwsgi"><span class="toc-number">1.2.</span> <span class="toc-text">uwsgi</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#安装uwsgi"><span class="toc-number">2.</span> <span class="toc-text">安装uwsgi</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#通过uwsgi启动服务"><span class="toc-number">3.</span> <span class="toc-text">通过uwsgi启动服务</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#创建虚拟环境"><span class="toc-number">3.1.</span> <span class="toc-text">创建虚拟环境</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#安装依赖包"><span class="toc-number">3.2.</span> <span class="toc-text">安装依赖包</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#创建uwsgi配置文件"><span class="toc-number">3.3.</span> <span class="toc-text">创建uwsgi配置文件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#启动uwsgi"><span class="toc-number">3.4.</span> <span class="toc-text">启动uwsgi</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#配置nginx"><span class="toc-number">4.</span> <span class="toc-text">配置nginx</span></a></li></ol></div></div></div><div id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://timgsa.baidu.com/timg?image&amp;quality=80&amp;size=b9999_10000&amp;sec=1599902999809&amp;di=6306855101fdb4e6f595c38dfce7f8dc&amp;imgtype=0&amp;src=http%3A%2F%2Fblog.demon8.cn%2Fmedia%2Farticle_img%2F2019%2F12%2F12%2Fw1c30rf061.jpeg)"><nav id="nav"><span class="pull-left" id="blog_name"><a class="blog_title" id="site-name" href="/">彭彭丁满</a></span><span class="pull-right menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><span class="toggle-menu close"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></span></span></nav><div id="post-info"><div id="post-title"><div class="posttitle">使用uwsgi+nginx部署django服务</div></div><div id="post-meta"><div class="meta-firstline"><time class="post-meta__date"><span class="post-meta__date-created" title="发表于 2020-09-12 14:39:51"><i class="far fa-calendar-alt fa-fw"></i> 发表于 2020-09-12</span><span class="post-meta__separator">|</span><span class="post-meta__date-updated" title="更新于 2020-09-12 15:04:59"><i class="fas fa-history fa-fw"></i> 更新于 2020-09-12</span></time><span class="post-meta__categories"><span class="post-meta__separator">|</span><i class="fas fa-inbox fa-fw post-meta__icon"></i><a class="post-meta__categories" href="/categories/python-web%E5%BC%80%E5%8F%91/">python web开发</a><i class="fas fa-angle-right post-meta__separator"></i><i class="fas fa-inbox fa-fw post-meta__icon"></i><a class="post-meta__categories" href="/categories/python-web%E5%BC%80%E5%8F%91/Django/">Django</a><i class="fas fa-angle-right post-meta__separator"></i><i class="fas fa-inbox fa-fw post-meta__icon"></i><a class="post-meta__categories" href="/categories/python-web%E5%BC%80%E5%8F%91/Django/%E6%9C%8D%E5%8A%A1%E9%83%A8%E7%BD%B2/">服务部署</a></span></div><div class="meta-secondline"> </div><div class="meta-thirdline"><span class="post-meta-pv-cv"><i class="far fa-eye fa-fw post-meta__icon"></i><span>阅读量:</span><span id="busuanzi_value_page_pv"></span></span><span class="post-meta-commentcount"><span class="post-meta__separator">|</span><i class="far fa-comments fa-fw post-meta__icon"></i><span>评论数:</span><a href="/2020/09/12/%E4%BD%BF%E7%94%A8uwsgi-nginx%E9%83%A8%E7%BD%B2django%E6%9C%8D%E5%8A%A1/#post-comment"><span class="gitalk-comment-count comment-count"></span></a></span></div></div></div></header><main class="layout_post" id="content-inner"><article id="post"><div class="post-content" id="article-container"><h1 id="uwsgi介绍"><a href="#uwsgi介绍" class="headerlink" title="uwsgi介绍"></a>uwsgi介绍</h1><h2 id="wsgi"><a href="#wsgi" class="headerlink" title="wsgi"></a>wsgi</h2><p>WSGI，全称 <code>Web Server Gateway Interface</code>，或者<code>Python Web Server Gateway Interface</code> ，是为 Python 语言定义的 Web 服务器和 Web 应用程序或框架之间的一种简单而通用的接口，是一个Gateway，在协议之间进行转换。</p>
+<p>WSGI 是作为 Web 服务器与 Web 应用程序或应用框架之间的一种低级别的接口，以提升可移植 Web 应用开发的共同点。WSGI 是基于现存的 CGI 标准而设计的。</p>
+<p>很多框架都自带了 WSGI server ，比如 Flask，webpy，Django、CherryPy等等。当然性能都不好，自带的 web server 更多的是测试用途，发布时则使用生产环境的 WSGI server或者是联合 nginx 做 uwsgi 。</p>
+<h2 id="uwsgi"><a href="#uwsgi" class="headerlink" title="uwsgi"></a>uwsgi</h2><p>uWSGI是一个Web服务器，它实现了WSGI协议、uwsgi、http等协议。Nginx中<code>HttpUwsgiModule</code>的作用是与uWSGI服务器进行交换。</p>
+<p>要注意 WSGI / uwsgi / uWSGI 这三个概念的区分。</p>
+<ul>
+<li>WSGI看过前面小节的同学很清楚了，是一种通信协议。</li>
+<li>uwsgi同WSGI一样是一种通信协议。</li>
+<li>而uWSGI是实现了uwsgi和WSGI两种协议的Web服务器。</li>
+</ul>
+<p>uwsgi协议是一个uWSGI服务器自有的协议，它用于定义传输信息的类型（type of information），每一个uwsgi packet前4byte为传输信息类型描述，它与WSGI相比是两样东西。</p>
+<p>为什么有了uWSGI为什么还需要nginx？因为nginx具备优秀的静态内容处理能力，然后将动态内容转发给uWSGI服务器，这样可以达到很好的客户端响应。</p>
+<br>
+
+
+
+
+
+<h1 id="安装uwsgi"><a href="#安装uwsgi" class="headerlink" title="安装uwsgi"></a>安装uwsgi</h1><p>在python3环境下安装uwsgi：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ yum install -y epel-release uwsgi-plugin-python36</span><br></pre></td></tr></table></figure>
+
+
+
+<br>
+
+
+
+<h1 id="通过uwsgi启动服务"><a href="#通过uwsgi启动服务" class="headerlink" title="通过uwsgi启动服务"></a>通过uwsgi启动服务</h1><h2 id="创建虚拟环境"><a href="#创建虚拟环境" class="headerlink" title="创建虚拟环境"></a>创建虚拟环境</h2><p>创建一个python虚拟环境：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ pip install virtualenv</span><br><span class="line">$ virtualenv  venv</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="安装依赖包"><a href="#安装依赖包" class="headerlink" title="安装依赖包"></a>安装依赖包</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">source</span> venv/bin/activate</span><br><span class="line">$ pip install -r requirements.txt</span><br><span class="line">$ pip install uwsgi</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="创建uwsgi配置文件"><a href="#创建uwsgi配置文件" class="headerlink" title="创建uwsgi配置文件"></a>创建uwsgi配置文件</h2><p>在django项目的根目录下创建一个名为<code>uwsgi.ini</code>的配置文件：</p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[uwsgi]</span></span><br><span class="line"><span class="comment"># django项目的根目录</span></span><br><span class="line"><span class="attr">chdir</span>=/root/src/</span><br><span class="line"></span><br><span class="line"><span class="comment"># 模块名，格式为：&lt;django项目名称&gt;.wsgi:application</span></span><br><span class="line"><span class="attr">module</span>=miniproject.wsgi:application</span><br><span class="line"></span><br><span class="line"><span class="comment"># wsgi文件相对位置</span></span><br><span class="line"><span class="attr">wsgi-file</span>=miniproject/wsgi.py</span><br><span class="line"></span><br><span class="line"><span class="comment"># wsgi启动后监听的地址</span></span><br><span class="line"><span class="attr">socket</span>=<span class="number">0.0</span>.<span class="number">0.0</span>:<span class="number">7000</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># websocket允许的最大字节</span></span><br><span class="line"><span class="attr">websocket-max-size</span> = <span class="number">2048</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动的进程数</span></span><br><span class="line"><span class="attr">workers</span>=<span class="number">8</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 每个worker中的线程数</span></span><br><span class="line"><span class="attr">threads</span>= <span class="number">8</span></span><br><span class="line"></span><br><span class="line"><span class="attr">enable-threads</span>=<span class="literal">true</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动的用户和组</span></span><br><span class="line"><span class="attr">uid</span>=root</span><br><span class="line"><span class="attr">gid</span>=root</span><br><span class="line"></span><br><span class="line"><span class="comment"># 禁用请求日志记录</span></span><br><span class="line"><span class="attr">disable-logging</span> = <span class="literal">false</span></span><br><span class="line"><span class="attr">thunder-lock</span>=<span class="literal">true</span></span><br><span class="line"><span class="attr">post-buffering</span>=<span class="number">4096</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 指定的插件</span></span><br><span class="line"><span class="attr">plugins</span>=python36</span><br><span class="line"></span><br><span class="line"><span class="comment"># 虚拟环境的位置</span></span><br><span class="line"><span class="attr">home</span>=/root/venv</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="启动uwsgi"><a href="#启动uwsgi" class="headerlink" title="启动uwsgi"></a>启动uwsgi</h2><p>使用下面的命令直接启动uwsgi：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ uwsgi --ini uwsgi.ini</span><br></pre></td></tr></table></figure>
+
+
+
+<br>
+
+
+
+<h1 id="配置nginx"><a href="#配置nginx" class="headerlink" title="配置nginx"></a>配置nginx</h1><p>通过nginx代理uwsgi，配置文件如下：</p>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">upstream</span> uwsgiapi &#123;</span><br><span class="line">  <span class="attribute">server</span> <span class="number">127.0.0.1:7000</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="section">server</span> &#123;</span><br><span class="line">      <span class="attribute">listen</span> <span class="number">9000</span>;</span><br><span class="line"></span><br><span class="line">       <span class="attribute">location</span> /miniProj/segment/querySegment &#123;</span><br><span class="line">           <span class="attribute">include</span> /usr/local/nginx/conf/uwsgi_params;</span><br><span class="line">           <span class="attribute">uwsgi_pass</span> miniapi;</span><br><span class="line">           <span class="attribute">proxy_buffer_size</span> <span class="number">128k</span>;</span><br><span class="line">           <span class="attribute">proxy_buffering</span> <span class="literal">on</span>;</span><br><span class="line">           <span class="attribute">proxy_buffers</span> <span class="number">4</span> <span class="number">128k</span>;</span><br><span class="line">           <span class="attribute">proxy_busy_buffers_size</span> <span class="number">256k</span>;</span><br><span class="line">           <span class="attribute">proxy_max_temp_file_size</span> <span class="number">256k</span>;</span><br><span class="line">           <span class="attribute">proxy_http_version</span> <span class="number">1</span>.<span class="number">1</span>;</span><br><span class="line">           <span class="attribute">proxy_set_header</span> Upgrade <span class="variable">$http_upgrade</span>;</span><br><span class="line">           <span class="attribute">proxy_set_header</span> Connection <span class="string">"upgrade"</span>;</span><br><span class="line">           <span class="attribute">uwsgi_read_timeout</span> <span class="number">86400s</span>;</span><br><span class="line">           <span class="attribute">uwsgi_send_timeout</span> <span class="number">86400s</span>;</span><br><span class="line">           <span class="attribute">client_max_body_size</span>    <span class="number">1000m</span>;</span><br><span class="line">           <span class="attribute">proxy_set_header</span> X-Real-IP <span class="variable">$remote_addr</span>;</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="attribute">location</span> = /favicon.ico &#123;</span><br><span class="line">           <span class="attribute">log_not_found</span> <span class="literal">off</span>;</span><br><span class="line">           <span class="attribute">access_log</span> <span class="literal">off</span>;</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="attribute">location</span> <span class="regexp">~* /\.(svn|git)/</span> &#123;</span><br><span class="line">           <span class="attribute">return</span> <span class="number">404</span>;</span><br><span class="line">       &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+</div><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:undefined">Luka Vergo</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://liyongzhezz.github.io/2020/09/12/%E4%BD%BF%E7%94%A8uwsgi-nginx%E9%83%A8%E7%BD%B2django%E6%9C%8D%E5%8A%A1/">https://liyongzhezz.github.io/2020/09/12/%E4%BD%BF%E7%94%A8uwsgi-nginx%E9%83%A8%E7%BD%B2django%E6%9C%8D%E5%8A%A1/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://liyongzhezz.github.io" target="_blank">彭彭丁满</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Django/">Django</a><a class="post-meta__tags" href="/tags/uwsgi/">uwsgi</a></div><div class="post_share"><div class="social-share" data-image="https://timgsa.baidu.com/timg?image&amp;quality=80&amp;size=b9999_10000&amp;sec=1599902999809&amp;di=6306855101fdb4e6f595c38dfce7f8dc&amp;imgtype=0&amp;src=http%3A%2F%2Fblog.demon8.cn%2Fmedia%2Farticle_img%2F2019%2F12%2F12%2Fw1c30rf061.jpeg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css"/><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js"></script></div></div><div class="post-reward"><button class="reward-button"><i class="fas fa-qrcode"></i> 打赏<div class="reward-main"><ul class="reward-all"><li class="reward-item"><img class="post-qr-code__img" src="/img/wechat.png" alt="wechat" onclick="window.open('/img/wechat.png')"/><div class="post-qr-code__desc">wechat</div></li><li class="reward-item"><img class="post-qr-code__img" src="/img/alipay.png" alt="alipay" onclick="window.open('/img/alipay.png')"/><div class="post-qr-code__desc">alipay</div></li></ul></div></button></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/2020/09/09/Nginx-Ingress%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98/"><img class="next-cover" data-src="https://timgsa.baidu.com/timg?image&amp;quality=80&amp;size=b9999_10000&amp;sec=1599655866231&amp;di=6dcf53f8ddee33711c9b7d034f9f92de&amp;imgtype=0&amp;src=http%3A%2F%2Fpic4.zhimg.com%2Fv2-b150ca39ea4691b50d3b11c3481f61b3_1440w.jpg%3Fsource%3D172ae18b" onerror="onerror=null;src='/img/404.jpg'"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Nginx Ingress性能调优</div></div></a></div></nav><div class="relatedPosts"><div class="relatedPosts_headline"><i class="fas fa-thumbs-up fa-fw"></i><span> 相关推荐</span></div><div class="relatedPosts_list"><div class="relatedPosts_item"><a href="/2020/07/23/Django-ORM操作数据库/" title="Django ORM操作数据库"><img class="relatedPosts_cover" data-src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1595483262367&di=8b39aa4df23760057f69288e9ce25fc7&imgtype=0&src=http%3A%2F%2Fn.sinaimg.cn%2Ftranslate%2Fw1280h720%2F20171204%2Fqa_i-fypikwt6342432.jpg"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="far fa-calendar-alt fa-fw"></i> 2020-07-23</div><div class="relatedPosts_title">Django ORM操作数据库</div></div></a></div><div class="relatedPosts_item"><a href="/2020/07/31/Django分页查询/" title="Django分页查询"><img class="relatedPosts_cover" data-src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1596184483878&di=c347e6459c1c3d225c06840cd19f59b9&imgtype=0&src=http%3A%2F%2F5b0988e595225.cdn.sohucs.com%2Fimages%2F20171204%2F9d4fde3a60ee4b0c9d3b3a5ea336df18.jpeg"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="far fa-calendar-alt fa-fw"></i> 2020-07-31</div><div class="relatedPosts_title">Django分页查询</div></div></a></div><div class="relatedPosts_item"><a href="/2020/07/31/MacOS安装mysqlclient失败/" title="MacOS安装mysqlclient失败"><img class="relatedPosts_cover" data-src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1596199327501&di=791911d536ed749b8a8e94e3f871c198&imgtype=0&src=http%3A%2F%2Fwww.west.cn%2Finfo%2Fupload%2F20180713%2Fddb20ffkvi2.jpg"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="far fa-calendar-alt fa-fw"></i> 2020-07-31</div><div class="relatedPosts_title">MacOS安装mysqlclient失败</div></div></a></div><div class="relatedPosts_item"><a href="/2020/08/05/Django使用Middleware记录日志/" title="Django使用Middleware记录日志"><img class="relatedPosts_cover" data-src="https://ss2.bdstatic.com/70cFvnSh_Q1YnxGkpoWK1HF6hhy/it/u=316528160,103010658&fm=26&gp=0.jpg"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="far fa-calendar-alt fa-fw"></i> 2020-08-05</div><div class="relatedPosts_title">Django使用Middleware记录日志</div></div></a></div><div class="relatedPosts_item"><a href="/2020/09/09/Django序列化查询数据/" title="Django序列化查询数据"><img class="relatedPosts_cover" data-src="https://ss3.bdstatic.com/70cFv8Sh_Q1YnxGkpoWK1HF6hhy/it/u=633567869,609217672&fm=26&gp=0.jpg"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="far fa-calendar-alt fa-fw"></i> 2020-09-09</div><div class="relatedPosts_title">Django序列化查询数据</div></div></a></div></div></div><hr><div id="post-comment"><div class="comment_headling"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
+  clientID: '50c33518212f08034726',
+  clientSecret: '497b04ce72a905ec41ebc3fb051369434affe3c7',
+  repo: 'liyongzhezz.github.io',
+  owner: 'liyongzhezz',
+  admin: ['liyongzhezz'],
+  id: md5(decodeURI(location.pathname)),
+  language: 'zh-CN',
+  perPage: 10,
+  distractionFreeMode: false,
+  pagerDirection: 'last',
+  createIssueManually: false,
+  updateCountCallback: commentCount
+})
+gitalk.render('gitalk-container')
+
+function commentCount(n){
+  try {
+    document.getElementsByClassName('gitalk-comment-count')[0].innerHTML= n
+  } catch (e) {
+    return false
+  }
+}</script></div></article></main><footer id="footer" data-type="color"><div id="footer-wrap"><div class="copyright">&copy;2020  <i id="heartbeat" class="fa fas fa-heartbeat"></i> Luka Vergo</div><div class="framework-info"><span>驱动 </span><a href="https://hexo.io" target="_blank" rel="noopener"><span>Hexo</span></a><span class="footer-separator">|</span><span>主题 </span><a href="https://github.com/jerryc127/hexo-theme-butterfly" target="_blank" rel="noopener"><span>Butterfly</span></a></div></div><head><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/HCLonely/images@master/others/heartbeat.min.css"><meta name="generator" content="Hexo 4.2.1"></head></footer></div><section class="rightside" id="rightside"><div id="rightside-config-hide"><button id="readmode" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="font_plus" title="放大字体"><i class="fas fa-plus"></i></button><button id="font_minus" title="缩小字体"><i class="fas fa-minus"></i></button><button class="translate_chn_to_cht" id="translateLink" title="简繁转换">简</button><button id="darkmode" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button></div><div id="rightside-config-show"><button id="rightside_config" title="设置"><i class="fas fa-cog"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="scroll_to_comment fas fa-comments"></i></a><button class="close" id="mobile-toc-button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></section><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module" defer></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js" async></script></body></html>
