@@ -75,6 +75,8 @@ $ cp /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys
 ```bash
 $ wget http://archive.cloudera.com/cdh5/cdh/5/hadoop-2.6.0-cdh5.7.0.tar.gz
 $ tar zxf hadoop-2.6.0-cdh5.7.0.tar.gz -C /usr/local/
+$ echo "export PATH=$PATH:/usr/local/hadoop-2.6.0-cdh5.7.0/bin:/usr/local/hadoop-2.6.0-cdh5.7.0/sbin" >> /etc/profile
+$ source /etc/profile
 ```
 
 
@@ -152,7 +154,7 @@ $ mkdir /data/hadoop/tmp
 
 
 
-## 启动
+## 启动服务
 
 首先格式化文件系统：
 
@@ -160,7 +162,7 @@ $ mkdir /data/hadoop/tmp
 $ bin/hdfs namenode -format
 ```
 
-> 注意，仅第一次启动执行，后面再执行相当于进行了格式化
+> **注意，仅第一次启动执行，后面再执行相当于进行了格式化**
 
 
 
