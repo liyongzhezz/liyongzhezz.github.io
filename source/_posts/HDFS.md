@@ -37,6 +37,24 @@ hdfs由java开发，所以只要机器运行有java环境即可运行hdfs的相�
 
 
 
+### 优缺点
+
+**优点**：
+
+- 数据冗余、硬件容错；
+- 适合一次写入，多次读取；
+- 适合存储大文件；
+- 可以构建在廉价的服务器上；
+
+
+
+**缺点**：
+
+- 不适合低延迟数据访问；
+- 不适合小文件存储；
+
+
+
 ## HDFS架构
 
 
@@ -77,3 +95,31 @@ hdfs是一个master/slave架构，通常有一个namenode（master简称NN），
 
 
 读取的时候，会先到namenode上查找文件的元数据信息（block个数和位置）。
+
+
+
+<br>
+
+
+
+## HDFS数据读写的流程
+
+
+
+### 写流程
+
+1. 向客户端发起写请求，指明block大小及副本数（客户端一般会有默认值）；
+2. 客户端将文件被拆分为多个block；
+3. 客户端向namenode请求存储多个block并指明副本个数；
+4. namenode通过计算返回合适的datenode，客户端开始向第一个datenode中写入数据；
+5. 当第一个datenode开始写数据后，这个datenode会将数据转发给后续的datenode进行存储；
+6. datenode写完数据后向namenode上报存储结果；
+7. namenode返回存储成功结果到客户端，客户端确认后继续存储后续的block或者关闭连接；
+
+
+
+### 读流程
+
+1. 客户端向namenode发起请求，请求包括需要读取的文件名；
+2. namenode查询后，返回该文件的元数据信息，包括：有哪些block、block所在datenode集合；
+3. client向datenode发起请求，下载对应的block信息并组合；
