@@ -5,6 +5,7 @@ tags:
 - Python
 categories:
 - Python
+- 常用的库
 description: pythn request库的使用
 cover: https://ss3.bdstatic.com/70cFv8Sh_Q1YnxGkpoWK1HF6hhy/it/u=2100224046,747583905&fm=26&gp=0.jpg
 ---
