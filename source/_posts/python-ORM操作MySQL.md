@@ -108,7 +108,7 @@ class News(Base):
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
-from sqlalchemy import sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 engine = create_engine('mysql://root:root123@172.21.1.100:3306/news?charset=utf8')
 Base = declarative_base()
