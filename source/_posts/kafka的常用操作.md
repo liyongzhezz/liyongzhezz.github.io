@@ -62,6 +62,18 @@ Topic:kafka_data    PartitionCount:3    ReplicationFactor:3    Configs:segment.b
 
 
 
+## 修改topic分区数
+
+**注意：topic分区数只能增大，不能减少**
+
+```bash
+$ kafka-topics.sh --alter --bootstrap-server 9.235.152.125:9092 --topic kafka_data --partitions 30
+```
+
+> 修改topic：kafka_data 的分区数为30
+
+
+
 ## 删除topic
 
 ```bash
