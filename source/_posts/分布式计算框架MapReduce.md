@@ -92,7 +92,7 @@ MapReduce是一个软件框架，源自于google的MapReduce论文，发表于20
 
 ![](./v2.png)
 
- 
+
 
 
 
