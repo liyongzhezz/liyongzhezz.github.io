@@ -41,7 +41,7 @@ $ wget http://archive.apache.org/dist/zookeeper/zookeeper-3.5.5/apache-zookeeper
 
 ```bash
 $ tar zxf apache-zookeeper-3.5.5-bin.tar.gz 
-$ cd cd apache-zookeeper-3.5.5-bin
+$ cd apache-zookeeper-3.5.5-bin
 ```
 
 
@@ -378,7 +378,7 @@ $ docker run \
     --name zookeeper \
     --network=host \
     --restart always \
-    -v /data/zookeeper/conf/zoo.cfg:/conf/zoo.cfg \
+    -v /data/zookeeper/zoo.cfg:/conf/zoo.cfg \
     -v /data/zookeeper:/data/zookeeper \
     -v /etc/localtime:/etc/localtime:ro \
     -d zookeeper:3.5.5
