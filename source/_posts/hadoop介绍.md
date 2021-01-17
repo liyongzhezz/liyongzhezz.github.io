@@ -147,3 +147,48 @@ YARN具有高扩展性和容错性，也可以进行多框架资源统一调度�
 ## 选型
 
 apache hadoop在使用hadoop生态圈的其他软件结合解决问题的时候，有可能会出现jar包冲突的问题，测试和学习环境可以使用apache hadoop，生产可以使用CDH和HDM版本，搭建和升级方便。
+
+
+
+<br>
+
+
+
+# Hadoop 3.x新特性
+
+
+
+> hadoop3.x需要依赖java 8 及以上版本
+
+
+
+## common改进
+
+- shell脚本进行了重写，修复了存在的bug以及新增了新特性，并保持了兼容性；
+- 删除了过时的api；
+
+
+
+## HDFS改进
+
+- 支持了 eresure的编码方式；
+- 支持两个以上的NameNode；
+- Intra-datanode balancer，防止在新增或替换磁盘时导致数据不平衡；
+- 多个服务的默认端口变化：NameNode、SecondaryNameNode、DataNode、KMS（以前的端口处于Linux的默认端口范围内，有可能启动时会有端口冲突问题）；
+
+
+
+## YARN改进
+
+- yarn timeline service v.2；
+- support for opportunistic containers and distributed scheduling;
+
+
+
+## MapReduce改进
+
+- task级别进行了优化；
+- hadoop daemon进程和task堆内存管理优化；
+
+
+
