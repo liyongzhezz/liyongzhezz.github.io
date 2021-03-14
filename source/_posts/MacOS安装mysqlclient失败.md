@@ -38,5 +38,24 @@ $ LDFLAGS=-L/usr/local/opt/openssl/lib pip install mysqlclient
 
 
 
+还有一种可能是报这种错误：
 
+```bash
+In file included from MySQLdb/_mysql.c:29:
+    In file included from /usr/local/opt/mysql-client/include/mysql/mysql.h:45:
+    In file included from /Library/Developer/CommandLineTools/usr/lib/clang/12.0.0/include/stdint.h:52:
+    In file included from /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/stdint.h:53:
+    In file included from /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/_types/_intptr_t.h:30:
+    /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/machine/types.h:37:2: error: architecture not supported
+    #error architecture not supported
+
+```
+
+
+
+原因是xcode 12编译了 ARM64 版本的二进制文档导致了异常的抛出，使用下面方式解决：
+
+```bash
+$ ARCHFLAGS="-arch x86_64"   pip install mysqlclient
+```
 
