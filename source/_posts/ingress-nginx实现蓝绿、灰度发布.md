@@ -26,7 +26,7 @@ cover: https://ss1.bdstatic.com/70cFvXSh_Q1YnxGkpoWK1HF6hhy/it/u=175965930,25394
 
 
 
-## Canary功能介绍
+# Canary功能介绍
 
 Ingress-Nginx在0.21版本引入了Canary功能，可以为网关入口配置多个版本的应用程序，使用annotation来控制多个后端服务的流量分配。
 
@@ -50,9 +50,9 @@ canary通过下面的一些注释来实现流量分配：
 
 
 
-## 基于权重分配流量
+# 基于权重分配流量
 
-### 创建v1版本服务
+## 创建v1版本服务
 
 {% tabs comments %}
 
@@ -133,7 +133,7 @@ spec:
 
 
 
-### 检查创建情况
+## 检查创建情况
 
 ```bash
 kubectl get pod,service,ingress -n echoserver
