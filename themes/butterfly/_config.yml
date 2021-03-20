@@ -8,6 +8,8 @@
 
 menu:
   主页: / || fas fa-home
+  目录||fas fa-home:
+    - 消息中间件 || /categories/消息中间件/ || fas fa-archive 
   时间轴: /archives/ || fas fa-archive
   标签: /tags/ || fas fa-tags
   分类: /categories/ || fas fa-folder-open
@@ -20,7 +22,7 @@ menu:
 # Code Blocks (代碼相關)
 # --------------------------------------
 
-highlight_theme: mac # default / darker / pale night / light / ocean / mac / false
+highlight_theme: pale night # default / darker / pale night / light / ocean / mac / false
 highlight_copy: true # copy button
 highlight_lang: true # show the code language
 highlight_shrink: false # true: shrink the code blocks / false: expand the code blocks | none: expand code blocks and hide the button
@@ -565,7 +567,7 @@ subtitle:
     - I love the soul that remains deep in the creation
 
 # Loading Animation (加載動畫)
-preloader: false
+preloader: true
 
 # aside (側邊欄)
 # --------------------------------------
@@ -573,7 +575,7 @@ preloader: false
 aside:
   enable: true
   mobile: true # display on mobile
-  position: left # left or right
+  position: right # left or right
   card_author:
     enable: true
     description:
