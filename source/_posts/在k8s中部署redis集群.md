@@ -7,7 +7,7 @@ categories:
 - 数据库
 - Redis
 - 部署
-description:
+description: 在k8s中部署一个高可用redis集群
 cover: https://gimg2.baidu.com/image_search/src=http%3A%2F%2F5b0988e595225.cdn.sohucs.com%2Fimages%2F20180327%2F34adc98d775145f0b23c5fa67217af1d.png&refer=http%3A%2F%2F5b0988e595225.cdn.sohucs.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1618831808&t=b7f7e1ea802b755f7896decb0502c6a3
 ---
 
