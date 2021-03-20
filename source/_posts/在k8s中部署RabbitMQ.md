@@ -15,7 +15,9 @@ cover: https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=1271185307,1858
 
 {% note info 'fas fa-bullhorn' %}
 
-本文主要介绍了在k8s中使用有状态服务Statfulset方式部署一个RabbitMQ 3.8.3 版本的集群，更新于2021-03-20
+本文主要介绍了在k8s中使用有状态服务Statfulset方式部署一个RabbitMQ 3.8.3 版本的集群
+
+更新于 2021-03-20
 
 {% endnote %}
 
