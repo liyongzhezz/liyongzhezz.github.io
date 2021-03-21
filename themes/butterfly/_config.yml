@@ -11,6 +11,7 @@ menu:
   目录||fas fa-home:
     - 消息中间件 || /categories/消息中间件/ || fas fa-archive 
     - Kubernetes || /categories/Kubernetes/ || fas fa-archive
+    - MySQL || /categories/数据库/MySQL/ || fas fa-archive
   时间轴: /archives/ || fas fa-archive
   标签: /tags/ || fas fa-tags
   分类: /categories/ || fas fa-folder-open
