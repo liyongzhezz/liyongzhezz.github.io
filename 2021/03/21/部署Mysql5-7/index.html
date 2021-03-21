@@ -1,0 +1,276 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>部署Mysql5.7 | 彭彭丁满</title><meta name="description" content="使用RPM和源码两种方式部署一个单节点mysql 5.7服务"><meta name="keywords" content="MySQL"><meta name="author" content="Luka Vergo"><meta name="copyright" content="Luka Vergo"><meta name="format-detection" content="telephone=no"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://liyongzhezz.github.io/2021/03/21/%E9%83%A8%E7%BD%B2Mysql5-7/"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//fonts.googleapis.com" crossorigin="crossorigin"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><meta property="og:type" content="article"><meta property="og:title" content="部署Mysql5.7"><meta property="og:url" content="https://liyongzhezz.github.io/2021/03/21/%E9%83%A8%E7%BD%B2Mysql5-7/"><meta property="og:site_name" content="彭彭丁满"><meta property="og:description" content="使用RPM和源码两种方式部署一个单节点mysql 5.7服务"><meta property="og:image" content="https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fpic2.zhimg.com%2Fv2-c16b7d2b9e1ee5bccad87488ea69e352_1200x500.jpg&amp;refer=http%3A%2F%2Fpic2.zhimg.com&amp;app=2002&amp;size=f9999,10000&amp;q=a80&amp;n=0&amp;g=0n&amp;fmt=jpeg?sec=1618911539&amp;t=69fb2b2d94fdfe5deb68e606202bc923"><meta property="article:published_time" content="2021-03-21T09:30:43.000Z"><meta property="article:modified_time" content="2021-03-21T09:39:11.608Z"><meta name="twitter:card" content="summary"><script>var activateDarkMode = function () {
+  document.documentElement.setAttribute('data-theme', 'dark')
+  if (document.querySelector('meta[name="theme-color"]') !== null) {
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#000')
+  }
+}
+var activateLightMode = function () {
+  document.documentElement.setAttribute('data-theme', 'light')
+  if (document.querySelector('meta[name="theme-color"]') !== null) {
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#fff')
+  }
+}
+
+var getCookies = function (name) {
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2) return parts.pop().split(';').shift()
+}
+
+var autoChangeMode = '1'
+var t = getCookies('theme')
+if (autoChangeMode === '1') {
+  var isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+  var isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches
+  var isNotSpecified = window.matchMedia('(prefers-color-scheme: no-preference)').matches
+  var hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+
+  if (t === undefined) {
+    if (isLightMode) activateLightMode()
+    else if (isDarkMode) activateDarkMode()
+    else if (isNotSpecified || hasNoSupport) {
+      console.log('You specified no preference for a color scheme or your browser does not support it. I Schedule dark mode during night time.')
+      var now = new Date()
+      var hour = now.getHours()
+      var isNight = hour <= 6 || hour >= 18
+      isNight ? activateDarkMode() : activateLightMode()
+    }
+    window.matchMedia('(prefers-color-scheme: dark)').addListener(function (e) {
+      if (Cookies.get('theme') === undefined) {
+        e.matches ? activateDarkMode() : activateLightMode()
+      }
+    })
+  } else if (t === 'light') activateLightMode()
+  else activateDarkMode()
+} else if (autoChangeMode === '2') {
+  now = new Date()
+  hour = now.getHours()
+  isNight = hour <= 6 || hour >= 18
+  if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+  else if (t === 'light') activateLightMode()
+  else activateDarkMode()
+} else {
+  if (t === 'dark') activateDarkMode()
+  else if (t === 'light') activateLightMode()
+}</script><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css"><link rel="prev" title="在k8s中部署Mysql单实例" href="https://liyongzhezz.github.io/2021/03/21/%E5%9C%A8k8s%E4%B8%AD%E9%83%A8%E7%BD%B2Mysql%E5%8D%95%E5%AE%9E%E4%BE%8B/"><link rel="next" title="在k8s中部署mysql主从集群" href="https://liyongzhezz.github.io/2021/03/20/%E5%9C%A8k8s%E4%B8%AD%E9%83%A8%E7%BD%B2mysql%E4%B8%BB%E4%BB%8E%E9%9B%86%E7%BE%A4/"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/gitalk/dist/gitalk.min.css"><script src="https://cdn.jsdelivr.net/npm/gitalk@latest/dist/gitalk.min.js"></script><script src="https://cdn.jsdelivr.net/npm/blueimp-md5/js/md5.min.js"></script><script async="async" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script><script>(adsbygoogle = window.adsbygoogle || []).push({
+  google_ad_client: 'ca-pub-1185009661039450',
+  enable_page_level_ads: 'true'
+});</script><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web&amp;display=swap"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"簡"},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  bookmark: {
+    message_prev: '按',
+    message_next: '键将本页加入书签'
+  },
+  runtime_unit: '天',
+  runtime: true,
+  copyright: undefined,
+  ClickShowText: undefined,
+  medium_zoom: false,
+  fancybox: true,
+  Snackbar: {"bookmark":{"message_prev":"按","message_next":"键将本页加入书签"},"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#49b1f5","bgDark":"#121212","position":"bottom-left"},
+  justifiedGallery: {
+    js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
+    css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
+  },
+  baiduPush: false,
+  highlightCopy: true,
+  highlightLang: true,
+  isPhotoFigcaption: false,
+  islazyload: true,
+  isanchor: false    
+}</script><script>var GLOBAL_CONFIG_SITE = { 
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isSidebar: true
+  }</script><noscript><style>
+#nav {
+  opacity: 1
+}
+.justified-gallery img{
+  opacity: 1
+}
+</style></noscript><meta name="generator" content="Hexo 5.4.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><div id="mobile-sidebar"><div id="menu_mask"></div><div id="mobile-sidebar-menus"><div class="mobile_author_icon"><img class="avatar-img" src="/img/avator.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="mobile_post_data"><div class="mobile_data_item is-center"><div class="mobile_data_link"><a href="/archives/"><div class="headline">文章</div><div class="length_num">7</div></a></div></div><div class="mobile_data_item is-center">      <div class="mobile_data_link"><a href="/tags/"><div class="headline">标签</div><div class="length_num">4</div></a></div></div><div class="mobile_data_item is-center">     <div class="mobile_data_link"><a href="/categories/"><div class="headline">分类</div><div class="length_num">10</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page"><i class="fa-fw fas fa-home"></i><span> 目录</span><i class="fas fa-chevron-down menus-expand"></i></a><ul class="menus_item_child"><li><a class="site-page" href="/categories/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/"><i class="fa-fw fas fa-archive"></i><span> 消息中间件</span></a></li><li><a class="site-page" href="/categories/Kubernetes/"><i class="fa-fw fas fa-archive"></i><span> Kubernetes</span></a></li><li><a class="site-page" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/"><i class="fa-fw fas fa-archive"></i><span> MySQL</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><i class="fas fa-arrow-right on" id="toggle-sidebar"></i><div id="sidebar"><div class="sidebar-toc"><div class="sidebar-toc__title">目录</div><div class="sidebar-toc__progress"><span class="progress-notice">你已经读了</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar">     </div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#RPM%E6%96%B9%E5%BC%8F%E9%83%A8%E7%BD%B2"><span class="toc-number">1.</span> <span class="toc-text">RPM方式部署</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%B8%E8%BD%BD%E6%97%A7%E7%89%88%E6%9C%AC"><span class="toc-number">1.1.</span> <span class="toc-text">卸载旧版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8B%E8%BD%BD"><span class="toc-number">1.2.</span> <span class="toc-text">下载</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E8%A3%85"><span class="toc-number">1.3.</span> <span class="toc-text">安装</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%90%AF%E5%8A%A8%E6%9C%8D%E5%8A%A1"><span class="toc-number">1.4.</span> <span class="toc-text">启动服务</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96%E5%88%9D%E5%A7%8B%E5%AF%86%E7%A0%81"><span class="toc-number">1.5.</span> <span class="toc-text">获取初始密码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9%E5%AF%86%E7%A0%81%E5%B9%B6%E8%BF%9E%E6%8E%A5"><span class="toc-number">1.6.</span> <span class="toc-text">修改密码并连接</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%BA%90%E7%A0%81%E6%96%B9%E5%BC%8F%E5%AE%89%E8%A3%85"><span class="toc-number">2.</span> <span class="toc-text">源码方式安装</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BE%9D%E8%B5%96%E5%AE%89%E8%A3%85"><span class="toc-number">2.1.</span> <span class="toc-text">依赖安装</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8B%E8%BD%BD%E6%BA%90%E7%A0%81%E5%8C%85"><span class="toc-number">2.2.</span> <span class="toc-text">下载源码包</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E5%AE%89%E8%A3%85%E7%9B%AE%E5%BD%95"><span class="toc-number">2.3.</span> <span class="toc-text">创建安装目录</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E8%A3%85boost%E5%BA%93"><span class="toc-number">2.4.</span> <span class="toc-text">安装boost库</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%96%E8%AF%91%E5%AE%89%E8%A3%85mysql"><span class="toc-number">2.5.</span> <span class="toc-text">编译安装mysql</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B7%BB%E5%8A%A0%E7%94%A8%E6%88%B7%E5%B9%B6%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">2.6.</span> <span class="toc-text">添加用户并初始化</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%8E%AF%E5%A2%83%E8%AE%BE%E7%BD%AE"><span class="toc-number">2.7.</span> <span class="toc-text">环境设置</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%90%AF%E5%8A%A8%E6%9C%8D%E5%8A%A1%E5%B9%B6%E8%BF%9E%E6%8E%A5"><span class="toc-number">2.8.</span> <span class="toc-text">启动服务并连接</span></a></li></ol></li></ol></div></div></div><div id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fpic2.zhimg.com%2Fv2-c16b7d2b9e1ee5bccad87488ea69e352_1200x500.jpg&amp;refer=http%3A%2F%2Fpic2.zhimg.com&amp;app=2002&amp;size=f9999,10000&amp;q=a80&amp;n=0&amp;g=0n&amp;fmt=jpeg?sec=1618911539&amp;t=69fb2b2d94fdfe5deb68e606202bc923)"><nav id="nav"><span class="pull-left" id="blog_name"><a class="blog_title" id="site-name" href="/">彭彭丁满</a></span><span class="pull-right menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page"><i class="fa-fw fas fa-home"></i><span> 目录</span><i class="fas fa-chevron-down menus-expand"></i></a><ul class="menus_item_child"><li><a class="site-page" href="/categories/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/"><i class="fa-fw fas fa-archive"></i><span> 消息中间件</span></a></li><li><a class="site-page" href="/categories/Kubernetes/"><i class="fa-fw fas fa-archive"></i><span> Kubernetes</span></a></li><li><a class="site-page" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/"><i class="fa-fw fas fa-archive"></i><span> MySQL</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><span class="toggle-menu close"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></span></span></nav><div id="post-info"><div id="post-title"><div class="posttitle">部署Mysql5.7</div></div><div id="post-meta"><div class="meta-firstline"><time class="post-meta__date"><span class="post-meta__date-created" title="发表于 2021-03-21 17:30:43"><i class="far fa-calendar-alt fa-fw"></i> 发表于 2021-03-21</span><span class="post-meta__separator">|</span><span class="post-meta__date-updated" title="更新于 2021-03-21 17:39:11"><i class="fas fa-history fa-fw"></i> 更新于 2021-03-21</span></time><span class="post-meta__categories"><span class="post-meta__separator">|</span><i class="fas fa-inbox fa-fw post-meta__icon"></i><a class="post-meta__categories" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a><i class="fas fa-angle-right post-meta__separator"></i><i class="fas fa-inbox fa-fw post-meta__icon"></i><a class="post-meta__categories" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a><i class="fas fa-angle-right post-meta__separator"></i><i class="fas fa-inbox fa-fw post-meta__icon"></i><a class="post-meta__categories" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/%E9%83%A8%E7%BD%B2/">部署</a></span></div><div class="meta-secondline"> </div><div class="meta-thirdline"><span class="post-meta-pv-cv"><i class="far fa-eye fa-fw post-meta__icon"></i><span>阅读量:</span><span id="busuanzi_value_page_pv"></span></span><span class="post-meta-commentcount"><span class="post-meta__separator">|</span><i class="far fa-comments fa-fw post-meta__icon"></i><span>评论数:</span><a href="/2021/03/21/%E9%83%A8%E7%BD%B2Mysql5-7/#post-comment"><span class="gitalk-comment-count comment-count"></span></a></span></div></div></div></header><main class="layout_post" id="content-inner"><article id="post"><div class="post-content" id="article-container"><div class="note info fas fa-bullhorn">
+            <p>本文主要介绍了使用RPM和源码两种方式部署一个单节点mysql 5.7服务，实验环境为centos7</p><p>更新于 2021-03-21</p>
+          </div>
+
+<br>
+
+
+
+<h1 id="RPM方式部署"><a href="#RPM方式部署" class="headerlink" title="RPM方式部署"></a>RPM方式部署</h1><h2 id="卸载旧版本"><a href="#卸载旧版本" class="headerlink" title="卸载旧版本"></a>卸载旧版本</h2><p>首先检查是否存在旧的mysql：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpm -qa | grep -i mysql</span><br></pre></td></tr></table></figure>
+
+
+
+<p>如果存在就需要卸载：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpm -ev [旧的mysql包名]</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="下载"><a href="#下载" class="headerlink" title="下载"></a>下载</h2><p>下载mysql5.7官方prm包</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget https://dev.mysql.com/get/Downloads/MySQL-5.7/mysql-5.7.26-1.el7.x86_64.rpm-bundle.tar</span><br></pre></td></tr></table></figure>
+
+
+
+<p>然后解压，可以看到解压出如下的一些安装包：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">tar xvf mysql-5.7.26-1.el7.x86_64.rpm-bundle.tar </span><br><span class="line"></span><br><span class="line">mysql-community-embedded-devel-5.7.26-1.el7.x86_64.rpm</span><br><span class="line">mysql-community-libs-5.7.26-1.el7.x86_64.rpm</span><br><span class="line">mysql-community-embedded-5.7.26-1.el7.x86_64.rpm</span><br><span class="line">mysql-community-test-5.7.26-1.el7.x86_64.rpm</span><br><span class="line">mysql-community-embedded-compat-5.7.26-1.el7.x86_64.rpm</span><br><span class="line">mysql-community-common-5.7.26-1.el7.x86_64.rpm</span><br><span class="line">mysql-community-devel-5.7.26-1.el7.x86_64.rpm</span><br><span class="line">mysql-community-client-5.7.26-1.el7.x86_64.rpm</span><br><span class="line">mysql-community-server-5.7.26-1.el7.x86_64.rpm</span><br><span class="line">mysql-community-libs-compat-5.7.26-1.el7.x86_64.rpm</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>mysql-community-client：客户端的安装包；</li>
+<li>mysql-community-server：服务端的安装包；</li>
+<li>mysql-community-devel：包含开发库文件的安装包；</li>
+<li>mysql-community-test：包含测试的安装包；</li>
+<li>mysql-community-embedded：嵌入式mysql安装包；</li>
+</ul>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>一般情况下，只需要安装client和server安装包即可，当然其也会依赖其他库的安装包：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">rpm -ivh mysql-community-common-5.7.26-1.el7.x86_64.rpm</span><br><span class="line">rpm -ivh mysql-community-libs*</span><br><span class="line">rpm -ivh mysql-community-client-5.7.26-1.el7.x86_64.rpm</span><br><span class="line">rpm -ivh mysql-community-devel-5.7.26-1.el7.x86_64.rpm</span><br><span class="line">yum install -y perl libaio libaio-devel numactl net-tools</span><br><span class="line">rpm -ivh mysql-community-server-5.7.26-1.el7.x86_64.rpm</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="启动服务"><a href="#启动服务" class="headerlink" title="启动服务"></a>启动服务</h2><p>启动mysql服务</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl start mysqld.service</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="获取初始密码"><a href="#获取初始密码" class="headerlink" title="获取初始密码"></a>获取初始密码</h2><p>查看mysql日志，找到类似下面的这一行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cat /var/<span class="built_in">log</span>/mysql.log</span><br><span class="line"></span><br><span class="line">[Note] A temporary password is generated <span class="keyword">for</span> root@localhost: &lt;wqB!ebdk6b4</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>mysql第一次运行的时候会初始化一个root用户并设置一个随机密码，这一行可以找到这个密码</p>
+</blockquote>
+<h2 id="修改密码并连接"><a href="#修改密码并连接" class="headerlink" title="修改密码并连接"></a>修改密码并连接</h2><p>可以通过下面的命令修改root密码并删除测试数据库和匿名用户</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 设置root用户密码</span></span><br><span class="line">mysqladmin -u root -p<span class="string">&#x27;&lt;wqB!ebdk6b4&#x27;</span> password Root123?</span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除测试数据库和匿名用户</span></span><br><span class="line">mysql_secure_installation</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>mysql密码需要符合一定的密码规则，否则设置会失败</p>
+</blockquote>
+<p>下面就可以连接mysql了：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ mysql -uroot -pRoot123?</span><br></pre></td></tr></table></figure>
+
+
+
+<br>
+
+
+
+<h1 id="源码方式安装"><a href="#源码方式安装" class="headerlink" title="源码方式安装"></a>源码方式安装</h1><h2 id="依赖安装"><a href="#依赖安装" class="headerlink" title="依赖安装"></a>依赖安装</h2><p>安装依赖包：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install -y make gcc gcc-c++ cmake bison-devel ncurses ncurses-devel</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="下载源码包"><a href="#下载源码包" class="headerlink" title="下载源码包"></a>下载源码包</h2><p>首先下载mysql5.7源码包：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget https://dev.mysql.com/get/Downloads/MySQL-5.7/mysql-boost-5.7.26.tar.gz</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="创建安装目录"><a href="#创建安装目录" class="headerlink" title="创建安装目录"></a>创建安装目录</h2><p>创建安装目录和数据目录，安装目录一般放在 <code>/usr/local/</code> 下，数据目录使用单独的磁盘：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mkdir /usr/<span class="built_in">local</span>/mysql</span><br><span class="line">mkdir -p /data/3306/data</span><br><span class="line">mkdir -p /data/3306/binlog</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="安装boost库"><a href="#安装boost库" class="headerlink" title="安装boost库"></a>安装boost库</h2><blockquote>
+<p>从mysql5.7开始，boost库是必须依赖的</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mkdir /usr/<span class="built_in">local</span>/boost</span><br><span class="line"><span class="built_in">cd</span> /usr/<span class="built_in">local</span>/boost</span><br><span class="line">wget http://www.sourceforge.net/projects/boost/files/boost/1.59.0/boost_1_59_0.tar.gz</span><br><span class="line">tar zxf boost_1_59_0.tar.gz</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="编译安装mysql"><a href="#编译安装mysql" class="headerlink" title="编译安装mysql"></a>编译安装mysql</h2><p>编译源码：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">tar zxf mysql-boost-5.7.26.tar.gz</span><br><span class="line"><span class="built_in">cd</span> mysql-5.7.26/</span><br><span class="line"></span><br><span class="line">cmake \</span><br><span class="line">-DCMAKE_INSTALL_PREFIX=/usr/<span class="built_in">local</span>/mysql \   </span><br><span class="line">-DMYSQL_DATADIR=/data/3306/data \</span><br><span class="line">-DSYSCONFDIR=/data/3306 \</span><br><span class="line">-DWITH_MYISAM_STORAGE_ENGINE=1 \</span><br><span class="line">-DWITH_INNOBASE_STORAGE_ENGINE=1 \</span><br><span class="line">-DWITH_MEMORY_STORAGE_ENGINE=1 \</span><br><span class="line">-DWITH_READLINE=1 \</span><br><span class="line">-DMYSQL_UNIX_ADDR=/data/3306/mysql.sock \</span><br><span class="line">-DMYSQL_TCP_PORT=3306 \</span><br><span class="line">-DENABLED_LOCAL_INFILE=1 \</span><br><span class="line">-DWITH_PARTITION_STORAGE_ENGINE=1 \</span><br><span class="line">-DEXTRA_CHARSETS=all \</span><br><span class="line">-DDEFAULT_CHARSET=utf8mb4 \</span><br><span class="line">-DDEFAULT_COLLATION=utf8mb4_general_ci \</span><br><span class="line">-DWITH_BOOST=/usr/<span class="built_in">local</span>/boost</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>DCMAKE_INSTALL_PREFIX</code> ：安装的根目录；</li>
+<li><code>DMYSQL_DATADIR</code>：数据目录；</li>
+<li><code>DSYSCONFDIR</code>：配置文件目录；</li>
+<li><code>DWITH_MYISAM_STORAGE_ENGINE=1</code>：编译myisam存储引擎，默认的存储引擎，不加也可以；</li>
+<li><code>DWITH_INNOBASE_STORAGE_ENGINE=1</code>：支持InnoDB存储引擎，这个也是默认安装的；</li>
+<li><code>DWITH_MEMORY_STORAGE_ENGINE=1</code>： 持MEMORY引擎；</li>
+<li><code>DWITH_READLINE=1</code>：使用readline功能；</li>
+<li><code>DMYSQL_UNIX_ADDR</code>：sock文件存放目录；</li>
+<li><code>DMYSQL_TCP_PORT=3306</code> ：数据库端口；</li>
+<li><code>DENABLED_LOCAL_INFILE=1</code>：可以使用load data infile命令从本地导入文件；</li>
+<li><code>DWITH_PARTITION_STORAGE_ENGINE=1</code>： 安装数据库分区；</li>
+<li><code>DEXTRA_CHARSETS=all</code>： 支持所有字符集；</li>
+<li><code>DDEFAULT_CHARSET=utf8mb4</code>：默认字符集；</li>
+<li><code>DDEFAULT_COLLATION=utf8mb4_general_ci</code> ：默认效验字符集排序规则，要和<code>DDEFAULT_CHARSET</code>一起用；</li>
+<li><code>DWITH_BOOST=/usr/local/boost</code>：指定boost库位置，从5.7.5开始Boost库是必需的；</li>
+</ul>
+<p>编译成功后进行安装：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">make &amp;&amp; make install</span><br><span class="line">make clean</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="添加用户并初始化"><a href="#添加用户并初始化" class="headerlink" title="添加用户并初始化"></a>添加用户并初始化</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">groupadd mysql</span><br><span class="line">useradd -g mysql mysql</span><br><span class="line">chown -R mysql:mysql /usr/<span class="built_in">local</span>/mysql</span><br><span class="line">chown -R mysql:mysql /data/3306</span><br><span class="line"><span class="built_in">cd</span> /usr/<span class="built_in">local</span>/mysql</span><br><span class="line">./bin/mysqld --initialize --user=mysql --basedir=/usr/<span class="built_in">local</span>/mysql --datadir=/data/3306/data/ </span><br></pre></td></tr></table></figure>
+
+
+
+<p>观察初始化输出，找到类似于如下的一行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">2019-06-29T11:32:37.238756Z 1 [Note] A temporary password is generated for root@localhost: &amp;leFGSPpM4sC</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>这个是初始化设置的mysql默认root密码，需要暂时记住。</strong></p>
+</blockquote>
+<h2 id="环境设置"><a href="#环境设置" class="headerlink" title="环境设置"></a>环境设置</h2><p>设置环境变量：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">&quot;export PATH=<span class="variable">$PATH</span>:/usr/local/mysql/bin&quot;</span> &gt;&gt; /etc/profile</span><br><span class="line"><span class="built_in">source</span> /etc/profile</span><br></pre></td></tr></table></figure>
+
+
+
+<p>设置mysql启动文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /usr/<span class="built_in">local</span>/mysql/support-files</span><br><span class="line">cp mysql.server /etc/init.d/mysqld</span><br><span class="line">chmod 755 /etc/init.d/mysqld</span><br></pre></td></tr></table></figure>
+
+
+
+<p>修改mysql启动脚本，设置数据目录和根目录：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/init.d/mysqld</span><br><span class="line"></span><br><span class="line">// 修改下面的项目指定根目录</span><br><span class="line">basedir=/usr/<span class="built_in">local</span>/mysql/</span><br><span class="line">datadir=/data/3306/data/</span><br></pre></td></tr></table></figure>
+
+
+
+<p>修改配置文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/my.cnf</span><br><span class="line"></span><br><span class="line">// 修改为如下的形式</span><br><span class="line">[mysqld]</span><br><span class="line">basedir=/usr/<span class="built_in">local</span>/mysql</span><br><span class="line">datadir=/data/3306/data/</span><br><span class="line">socket=/data/3306/mysql.sock</span><br><span class="line">user=mysql</span><br><span class="line">tmpdir=/data/3306/</span><br><span class="line"><span class="comment"># Disabling symbolic-links is recommended to prevent assorted security risks</span></span><br><span class="line">symbolic-links=0</span><br><span class="line"><span class="comment"># Settings user and group are ignored when systemd is used.</span></span><br><span class="line"><span class="comment"># If you need to run mysqld under a different user or group,</span></span><br><span class="line"><span class="comment"># customize your systemd unit file for mariadb according to the</span></span><br><span class="line"><span class="comment"># instructions in http://fedoraproject.org/wiki/Systemd</span></span><br><span class="line"></span><br><span class="line">[mysqld_safe]</span><br><span class="line">log-error=/data/3306/data/error.log</span><br><span class="line">pid-file=/data/3306/data/mysql.pid</span><br><span class="line"></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># include all files from the config directory</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line">!includedir /etc/my.cnf.d</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="启动服务并连接"><a href="#启动服务并连接" class="headerlink" title="启动服务并连接"></a>启动服务并连接</h2><p>启动mysql：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">service mysqld start </span><br><span class="line">netstat -ntlp | grep mysqld</span><br><span class="line">tcp6       0      0 :::3306                 :::*                    LISTEN      18471/mysqld        </span><br></pre></td></tr></table></figure>
+
+
+
+<p>现在就可以使用前面获取到的默认密码登录数据库了，不过也可以使用下面的命令来重新设置密码及删除匿名用户和库：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 设置root用户密码</span></span><br><span class="line">mysqladmin -u root -p<span class="string">&#x27;&amp;leFGSPpM4sC&#x27;</span> password Root123?</span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除测试数据库和匿名用户</span></span><br><span class="line">mysql_secure_installation</span><br><span class="line">mysql -uroot -pRoot123?</span><br></pre></td></tr></table></figure>
+
+</div><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:undefined">Luka Vergo</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://liyongzhezz.github.io/2021/03/21/%E9%83%A8%E7%BD%B2Mysql5-7/">https://liyongzhezz.github.io/2021/03/21/%E9%83%A8%E7%BD%B2Mysql5-7/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://liyongzhezz.github.io" target="_blank">彭彭丁满</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/MySQL/">MySQL</a></div><div class="post_share"><div class="social-share" data-image="https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=985528186,1328606288&amp;fm=26&amp;gp=0.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css"/><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js"></script></div></div><div class="post-reward"><button class="reward-button"><i class="fas fa-qrcode"></i> 打赏<div class="reward-main"><ul class="reward-all"><li class="reward-item"><img class="post-qr-code__img" src="/img/wechat.png" alt="wechat" onclick="window.open('/img/wechat.png')"/><div class="post-qr-code__desc">wechat</div></li><li class="reward-item"><img class="post-qr-code__img" src="/img/alipay.png" alt="alipay" onclick="window.open('/img/alipay.png')"/><div class="post-qr-code__desc">alipay</div></li></ul></div></button></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/2021/03/21/%E5%9C%A8k8s%E4%B8%AD%E9%83%A8%E7%BD%B2Mysql%E5%8D%95%E5%AE%9E%E4%BE%8B/"><img class="prev-cover" data-src="https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=985528186,1328606288&amp;fm=26&amp;gp=0.jpg" onerror="onerror=null;src='/img/404.jpg'"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">在k8s中部署Mysql单实例</div></div></a></div><div class="next-post pull-right"><a href="/2021/03/20/%E5%9C%A8k8s%E4%B8%AD%E9%83%A8%E7%BD%B2mysql%E4%B8%BB%E4%BB%8E%E9%9B%86%E7%BE%A4/"><img class="next-cover" data-src="https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fs3.51cto.com%2Foss%2F201802%2F08%2F63b4c7aed6ae968d015d1996d849e887.jpg-wh_651x-s_1564773166.jpg&amp;refer=http%3A%2F%2Fs3.51cto.com&amp;app=2002&amp;size=f9999,10000&amp;q=a80&amp;n=0&amp;g=0n&amp;fmt=jpeg?sec=1618833026&amp;t=075446eb7b37fdf6d30bff2ef6ae2ac7" onerror="onerror=null;src='/img/404.jpg'"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">在k8s中部署mysql主从集群</div></div></a></div></nav><div class="relatedPosts"><div class="relatedPosts_headline"><i class="fas fa-thumbs-up fa-fw"></i><span> 相关推荐</span></div><div class="relatedPosts_list"><div class="relatedPosts_item"><a href="/2021/03/20/在k8s中部署mysql主从集群/" title="在k8s中部署mysql主从集群"><img class="relatedPosts_cover" data-src="https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fs3.51cto.com%2Foss%2F201802%2F08%2F63b4c7aed6ae968d015d1996d849e887.jpg-wh_651x-s_1564773166.jpg&refer=http%3A%2F%2Fs3.51cto.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1618833026&t=075446eb7b37fdf6d30bff2ef6ae2ac7"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="far fa-calendar-alt fa-fw"></i> 2021-03-20</div><div class="relatedPosts_title">在k8s中部署mysql主从集群</div></div></a></div><div class="relatedPosts_item"><a href="/2021/03/21/在k8s中部署Mysql单实例/" title="在k8s中部署Mysql单实例"><img class="relatedPosts_cover" data-src="https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=985528186,1328606288&fm=26&gp=0.jpg"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="far fa-calendar-alt fa-fw"></i> 2021-03-21</div><div class="relatedPosts_title">在k8s中部署Mysql单实例</div></div></a></div></div></div><hr><div id="post-comment"><div class="comment_headling"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div><div id="gitalk-container"></div><script>var gitalk = new Gitalk({
+  clientID: '50c33518212f08034726',
+  clientSecret: '497b04ce72a905ec41ebc3fb051369434affe3c7',
+  repo: 'liyongzhezz.github.io',
+  owner: 'liyongzhezz',
+  admin: ['liyongzhezz'],
+  id: md5(decodeURI(location.pathname)),
+  language: 'zh-CN',
+  perPage: 10,
+  distractionFreeMode: false,
+  pagerDirection: 'last',
+  createIssueManually: false,
+  updateCountCallback: commentCount
+})
+gitalk.render('gitalk-container')
+
+function commentCount(n){
+  try {
+    document.getElementsByClassName('gitalk-comment-count')[0].innerHTML= n
+  } catch (e) {
+    return false
+  }
+}</script></div></article></main><footer id="footer" data-type="color"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2021  <i id="heartbeat" class="fa fas fa-heartbeat"></i> Luka Vergo</div><div class="framework-info"><span>驱动 </span><a target="_blank" rel="noopener" href="https://hexo.io"><span>Hexo</span></a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly"><span>Butterfly</span></a></div></div><head><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/HCLonely/images@master/others/heartbeat.min.css"></head></footer></div><section class="rightside" id="rightside"><div id="rightside-config-hide"><button id="readmode" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="font_plus" title="放大字体"><i class="fas fa-plus"></i></button><button id="font_minus" title="缩小字体"><i class="fas fa-minus"></i></button><button class="translate_chn_to_cht" id="translateLink" title="简繁转换">简</button><button id="darkmode" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button></div><div id="rightside-config-show"><button id="rightside_config" title="设置"><i class="fas fa-cog"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="scroll_to_comment fas fa-comments"></i></a><button class="close" id="mobile-toc-button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></section><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module" defer></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js" async></script><script>var endLoading = function () {
+  document.body.style.overflow = 'auto';
+  document.getElementById('loading-box').classList.add("loaded")
+}
+window.addEventListener('load',endLoading)</script></body></html>
