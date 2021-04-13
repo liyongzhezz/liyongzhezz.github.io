@@ -14,7 +14,7 @@ cover: https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fwww.nd9p.com%2Fuplo
 
 {% note info 'fas fa-bullhorn' %}
 
-本文主要介绍了在k8s中使用有状态服务Statfulset方式部署一个RabbitMQ 3.8.3 版本的集群
+本文主要介绍了使用yum和源码两种方式部署nginx服务
 
 更新于 2021-04-13
 
