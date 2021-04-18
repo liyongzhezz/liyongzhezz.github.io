@@ -6,7 +6,7 @@ tags:
 categories:
 - 数据库
 - Redis
-- 数据持久化
+- 数据持久化和主从复制
 description: Redis的两种数据持久化方案：AOF和RDB
 cover: https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fwww.linuxdiyf.com%2Flinux%2Fuploads%2Fallimg%2F160228%2F2-16022P94942238.jpg&refer=http%3A%2F%2Fwww.linuxdiyf.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1621321738&t=d0e2350d8170a863dbe58a9953fddfb9
 ---
