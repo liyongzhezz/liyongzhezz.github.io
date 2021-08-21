@@ -100,5 +100,5 @@ theme: butterfly
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
   type: "git"
-  repository: https://github.com/liyongzhezz/liyongzhezz.github.io
+  repository: git@github.com:liyongzhezz/liyongzhezz.github.io
   branch: master
