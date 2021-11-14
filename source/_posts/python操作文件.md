@@ -1,5 +1,5 @@
 ---
-title: python操作文件
+title: 使用fileinput操作文件
 date: 2021-06-07 20:33:31
 tags:
 - Python
